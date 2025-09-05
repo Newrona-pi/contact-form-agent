@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -50,9 +50,8 @@ export default function Home() {
   });
 
   // 実行開始ミューテーション
-  const { mutate: startRun } = useMutation({
+  const startRunMutation = useMutation({
     mutationFn: createRun,
-    onSuccess: (run) => setCurrentRunId(run.id),
   });
   
   if (!_hasHydrated) {
@@ -78,7 +77,9 @@ export default function Home() {
       config: formData.config,
       sampleCount: 1
     };
-    startRun(request);
+    startRunMutation.mutate(request, {
+      onSuccess: (run) => setCurrentRunId(run.id),
+    });
   };
 
   // 現在のRunがある場合はモニターを表示
