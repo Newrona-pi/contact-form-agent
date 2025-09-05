@@ -25,21 +25,25 @@ export function DatasetsMultiselect({ value, onChange }: DatasetsMultiselectProp
 
   const queryClient = useQueryClient();
   
-  const { mutate: uploadDataset, isPending: uploading } = useMutation({
+  const uploadMutation = useMutation({
     mutationFn: api.uploadDataset,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['datasets'] });
-      setUploadError('');
-      setUploadName('');
-      setUploadTags('');
-      setUploadFile(null);
-    },
-    onError: () => {
-      setUploadError('アップロードに失敗しました');
-    }
   });
+  const uploading = uploadMutation.isPending;
+  const uploadDataset = (vars: any) =>
+    uploadMutation.mutate(vars, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['datasets'] });
+        setUploadError('');
+        setUploadName('');
+        setUploadTags('');
+        setUploadFile(null);
+      },
+      onError: () => {
+        setUploadError('アップロードに失敗しました');
+      },
+    });
 
-  const { mutate: deleteDataset, isPending: deleting } = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/datasets?id=${id}`, {
         method: 'DELETE',
@@ -49,13 +53,17 @@ export function DatasetsMultiselect({ value, onChange }: DatasetsMultiselectProp
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['datasets'] });
-    },
-    onError: () => {
-      setDeleteError('削除に失敗しました');
-    }
   });
+  const deleting = deleteMutation.isPending;
+  const deleteDataset = (id: string) =>
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['datasets'] });
+      },
+      onError: () => {
+        setDeleteError('削除に失敗しました');
+      },
+    });
 
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadName, setUploadName] = useState('');
