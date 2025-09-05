@@ -74,13 +74,13 @@ async function generateQuote(request: NextRequest) {
     // 商品詳細
     doc.fontSize(14).text("商品詳細", 50, 320);
     
-    const planNames = {
+    const planNames: Record<string, string> = {
       ONE_TIME: "買い切り",
       MONTHLY: "月額",
       ANNUAL: "年額",
     };
 
-    const planPrices = {
+    const planPrices: Record<string, number> = {
       ONE_TIME: 29800,
       MONTHLY: 1980,
       ANNUAL: 19800,
