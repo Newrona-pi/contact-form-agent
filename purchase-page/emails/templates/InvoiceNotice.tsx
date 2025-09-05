@@ -32,16 +32,16 @@ export function InvoiceNotice({ invoiceNumber, pdfUrl, dueDate, orderId }: Invoi
         </a>
       </div>
       
-      <h2 style={{ color: "#374151; margin-top: 30px;">支払い方法</h2>
+      <h2 style={{ color: "#374151", marginTop: "30px" }}>支払い方法</h2>
       <p>銀行振込にてお支払いください。振込手数料はお客様にてご負担ください。</p>
       
-      <h2 style={{ color: "#374151; margin-top: 30px;">入金確認後の処理</h2>
+      <h2 style={{ color: "#374151", marginTop: "30px" }}>入金確認後の処理</h2>
       <p>入金確認後、ライセンスキーをメールでお送りいたします。</p>
       
-      <p style={{ margin-top: 30px; }}>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
+      <p style={{ marginTop: "30px" }}>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
       
-      <hr style={{ margin: "30px 0; border: none; border-top: 1px solid #e5e7eb;" }} />
-      <p style={{ fontSize: "12px; color: #6b7280;" }}>
+      <hr style={{ margin: "30px 0", border: "none", borderTop: "1px solid #e5e7eb" }} />
+      <p style={{ fontSize: "12px", color: "#6b7280" }}>
         FormAutoFiller Pro<br />
         このメールは自動送信されています。
       </p>

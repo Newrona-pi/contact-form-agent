@@ -32,10 +32,10 @@ export function LicenseIssued({ licenseKey, seats, orderId }: LicenseIssuedProps
         <li>利用開始</li>
       </ol>
       
-      <p style={{ margin-top: 30px; }}>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
+      <p style={{ marginTop: "30px" }}>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
       
-      <hr style={{ margin: "30px 0; border: none; border-top: 1px solid #e5e7eb;" }} />
-      <p style={{ fontSize: "12px; color: #6b7280;" }}>
+      <hr style={{ margin: "30px 0", border: "none", borderTop: "1px solid #e5e7eb" }} />
+      <p style={{ fontSize: "12px", color: "#6b7280" }}>
         FormAutoFiller Pro<br />
         このメールは自動送信されています。
       </p>
