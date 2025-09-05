@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "form_filler"
+version = "0.1.0"
+description = "フォーム自動入力ツール - CSVファイルからフォームURLを読み込み、自動入力・送信・CAPTCHA解決を行う"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Form Filler Team"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "playwright>=1.40.0",
+    "typer>=0.9.0",
+    "aiofiles>=23.2.1",
+    "aiolimiter>=1.1.0",
+    "pyyaml>=6.0.1",
+    "aiohttp>=3.9.1",
+    "beautifulsoup4>=4.12.2",
+]
+
+[project.scripts]
+form_filler = "form_filler.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/your-username/form_filler"
+Repository = "https://github.com/your-username/form_filler"
+Issues = "https://github.com/your-username/form_filler/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["form_filler*"]
+exclude = ["tests*", "venv*", "scripts*"]

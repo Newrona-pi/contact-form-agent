@@ -1,0 +1,54 @@
+{
+  "datasets": [
+    {
+      "id": "it-100",
+      "name": "IT企業 100件",
+      "tags": [
+        "IT",
+        "B2B"
+      ],
+      "file": "/datasets/industry_it.csv"
+    },
+    {
+      "id": "food-50",
+      "name": "食品 50件",
+      "tags": [
+        "食品",
+        "B2C"
+      ],
+      "file": "/datasets/industry_food.csv"
+    },
+    {
+      "id": "finance-30",
+      "name": "金融 30件",
+      "tags": [
+        "金融",
+        "B2B"
+      ],
+      "file": "/datasets/industry_finance.csv"
+    },
+    {
+      "id": "custom-forms",
+      "name": "カスタムCSV",
+      "tags": [
+        "custom"
+      ],
+      "file": "/datasets/sample_input_forms.csv"
+    },
+    {
+      "id": "scrayping-url",
+      "name": "スクレイピングURL",
+      "tags": [
+        "custom"
+      ],
+      "file": "/datasets/contact_url.csv"
+    },
+    {
+      "id": "テスト_1756452425327",
+      "name": "テスト",
+      "tags": [],
+      "count": 1,
+      "file": "/datasets/テスト_1756452425327.csv"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Company {
+  id            String   @id @default(cuid())
+  name          String
+  kana          String?
+  department    String?
+  role          String?
+  addressZip    String?  @map("address_zip")
+  addressPref   String?  @map("address_pref")
+  addressCity   String?  @map("address_city")
+  addressLine1  String?  @map("address_line1")
+  addressLine2  String?  @map("address_line2")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  contacts Contact[]
+  orders   Order[]
+
+  @@map("companies")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  name      String
+  kana      String?
+  email     String   @unique
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orders  Order[]
+
+  @@index([email])
+  @@map("contacts")
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  companyId     String        @map("company_id")
+  contactId     String        @map("contact_id")
+  plan          String
+  seats         Int
+  startDate     DateTime?     @map("start_date")
+  useCase       String?
+  referralCode  String?       @map("referral_code")
+  notes         String?
+  paymentMethod String        @map("payment_method")
+  status        String        @default("DRAFT")
+  totalAmount   Int           @map("total_amount")
+  currency      String        @default("JPY")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact       Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  invoices      Invoice[]
+  paymentIntents PaymentIntent[]
+  licenses      License[]
+
+  @@map("orders")
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  orderId   String        @map("order_id")
+  number    String        @unique
+  pdfUrl    String?       @map("pdf_url")
+  status    String        @default("DRAFT")
+  dueDate   DateTime?     @map("due_date")
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+model PaymentIntent {
+  id           String             @id @default(cuid())
+  orderId      String             @map("order_id")
+  provider     String             @default("STRIPE")
+  clientSecret String             @map("client_secret")
+  status       String             @default("PENDING")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payment_intents")
+}
+
+model License {
+  id        String       @id @default(cuid())
+  orderId   String       @map("order_id")
+  key       String       @unique
+  status    String       @default("ACTIVE")
+  seats     Int
+  issuedAt  DateTime     @default(now()) @map("issued_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("licenses")
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  provider  String
+  rawJson   String   @map("raw_json") // SQLiteではJson型の代わりにStringを使用
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("webhook_events")
+}
+
+// SQLiteではenum型がサポートされていないため、String型を使用
+// 値の例:
+// PlanType: "ONE_TIME", "MONTHLY", "ANNUAL"
+// PaymentMethod: "CREDIT", "INVOICE"
+// OrderStatus: "DRAFT", "PENDING_PAYMENT", "PAID", "CANCELLED"
+// InvoiceStatus: "DRAFT", "SENT", "PAID", "VOID"
+// PaymentProvider: "STRIPE"
+// PaymentIntentStatus: "PENDING", "SUCCEEDED", "FAILED", "CANCELLED"
+// LicenseStatus: "ACTIVE", "INACTIVE", "REVOKED"

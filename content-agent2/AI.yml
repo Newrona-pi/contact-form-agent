@@ -1,0 +1,9 @@
+ def _match_cascade_for_key(self, key: str, fields: List[Dict[str, Any]]):
++    def _looks_kana(f):
++        tb = self._textbag(f)
++        return any(t in tb for t in ("kana","ｶﾅ","カナ","ふりがな","ﾌﾘｶﾞﾅ","セイ","メイ","せい","めい"))
+     # ...
+-    if key in ("first_name","last_name"):
+-        ...  # 既存のsplit_like判定
++    if key in ("first_name","last_name"):
++        fields = [f for f in fields if not _looks_kana(f)]
