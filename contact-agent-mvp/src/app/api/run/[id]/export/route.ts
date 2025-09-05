@@ -11,7 +11,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   // UTF-8 BOM を先頭に付与（Excel 互換のため）。既に付いている場合はそのまま
   const bom = Buffer.from([0xEF, 0xBB, 0xBF]);
   const body = buf.slice(0, 3).equals(bom) ? buf : Buffer.concat([bom, buf]);
-  return new NextResponse(body, {
+  return new NextResponse(body as any, {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
