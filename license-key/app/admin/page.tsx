@@ -1,48 +1,19 @@
-"use server";
+"use client";
 
-import React from "react";
-import { revalidatePath } from "next/cache";
+import { useFormState } from "react-dom";
+import type { State } from "./actions";
+import { issueLicenseAction } from "./actions";
 
-async function issueLicenseAction(formData: FormData) {
-  const email = String(formData.get("email") || "").trim();
-  const plan = String(formData.get("plan") || "basic").trim();
-  const activationLimit = Number(formData.get("activationLimit") || 1);
+const initialState: State = { ok: false, message: "" };
 
-  if (!email) {
-    return { ok: false, message: "メールアドレスを入力してください" };
-  }
+export default function AdminPage() {
+  const [state, formAction] = useFormState(issueLicenseAction, initialState);
 
-  const adminToken = process.env.ADMIN_TOKEN;
-  if (!adminToken) {
-    return { ok: false, message: "サーバーにADMIN_TOKENが設定されていません" };
-  }
-
-  // 同一プロジェクト内の内部APIを呼ぶ（サーバー側からヘッダ付与）
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/admin/issue-license`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-token": adminToken,
-    },
-    body: JSON.stringify({ email, plan, activationLimit }),
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({} as any));
-    return { ok: false, message: `発行に失敗しました: ${err?.error ?? res.statusText}` };
-  }
-
-  revalidatePath("/admin");
-  return { ok: true, message: "ライセンスを発行しました（メール送信含む）" };
-}
-
-export default async function AdminPage() {
   return (
     <main className="p-6 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">ライセンス発行（管理）</h1>
 
-      <form action={issueLicenseAction} className="space-y-4 border rounded p-4">
+      <form action={formAction} className="space-y-4 border rounded p-4">
         <div>
           <label className="block text-sm mb-1">メールアドレス</label>
           <input
@@ -56,7 +27,11 @@ export default async function AdminPage() {
 
         <div>
           <label className="block text-sm mb-1">プラン</label>
-          <select name="plan" defaultValue="basic" className="w-full border rounded px-3 py-2">
+          <select
+            name="plan"
+            defaultValue="basic"
+            className="w-full border rounded px-3 py-2"
+          >
             <option value="basic">basic</option>
             <option value="pro">pro</option>
             <option value="enterprise">enterprise</option>
@@ -75,14 +50,15 @@ export default async function AdminPage() {
           />
         </div>
 
-        <button type="submit" className="border rounded px-4 py-2">発行する</button>
+        <button type="submit" className="border rounded px-4 py-2">
+          発行する
+        </button>
       </form>
 
+      {state.message && <p className="mt-4 text-sm">{state.message}</p>}
       <p className="text-sm text-gray-500 mt-4">
-        注意: このページはADMIN_TOKENがサーバーに設定されている前提で内部APIを呼び出します。
+        注意: このページはサーバーに <code>ADMIN_TOKEN</code> が設定されている前提で内部 API を呼び出します。
       </p>
     </main>
   );
 }
-
-
