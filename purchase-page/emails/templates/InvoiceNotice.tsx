@@ -16,17 +16,17 @@ export function InvoiceNotice({ invoiceNumber, pdfUrl, dueDate, orderId }: Invoi
       
       <p>お申し込みいただいたFormAutoFiller Proの見積書・請求書をお送りいたします。</p>
       
-      <h2 style={{ color: "#374151; margin-top: 30px;">請求書情報</h2>
-      <div style={{ backgroundColor: "#fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+      <h2 style={{ color: "#374151", marginTop: "30px" }}>請求書情報</h2>
+      <div style={{ backgroundColor: "#fef2f2", padding: "20px", borderRadius: "8px", margin: "20px 0", borderLeft: "4px solid #dc2626" }}>
         <p><strong>請求書番号:</strong> {invoiceNumber}</p>
         <p><strong>支払期限:</strong> {dueDate.toLocaleDateString("ja-JP")}</p>
         <p><strong>注文番号:</strong> {orderId}</p>
       </div>
       
-      <div style={{ textAlign: "center; margin: 30px 0;" }}>
+      <div style={{ textAlign: "center", margin: "30px 0" }}>
         <a 
           href={pdfUrl} 
-          style={{ backgroundColor: "#dc2626; color: white; padding: "12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;" }}
+          style={{ backgroundColor: "#dc2626", color: "white", padding: "12px 24px", textDecoration: "none", borderRadius: "6px", display: "inline-block", fontWeight: "bold" }}
         >
           請求書をダウンロード
         </a>

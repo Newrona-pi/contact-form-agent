@@ -15,18 +15,18 @@ export function LicenseIssued({ licenseKey, seats, orderId }: LicenseIssuedProps
       
       <p>決済が完了し、ライセンスキーが発行されました。</p>
       
-      <h2 style={{ color: "#374151; margin-top: 30px;">ライセンス情報</h2>
-      <div style={{ backgroundColor: "#f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+      <h2 style={{ color: "#374151", marginTop: "30px" }}>ライセンス情報</h2>
+      <div style={{ backgroundColor: "#f0fdf4", padding: "20px", borderRadius: "8px", margin: "20px 0", borderLeft: "4px solid #059669" }}>
         <p><strong>ライセンスキー:</strong></p>
-        <p style={{ fontFamily: "monospace; font-size: 18px; font-weight: bold; color: #059669; backgroundColor: "#f9fafb; padding: 10px; border-radius: 4px; word-break: break-all;" }}>
+        <p style={{ fontFamily: "monospace", fontSize: "18px", fontWeight: "bold", color: "#059669", backgroundColor: "#f9fafb", padding: "10px", borderRadius: "4px", wordBreak: "break-all" }}>
           {licenseKey}
         </p>
         <p><strong>利用可能席数:</strong> {seats}席</p>
         <p><strong>注文番号:</strong> {orderId}</p>
       </div>
       
-      <h2 style={{ color: "#374151; margin-top: 30px;">利用開始方法</h2>
-      <ol style={{ lineHeight: 1.6; }}>
+      <h2 style={{ color: "#374151", marginTop: "30px" }}>利用開始方法</h2>
+      <ol style={{ lineHeight: 1.6 }}>
         <li>FormAutoFiller Proアプリケーションをダウンロード</li>
         <li>上記のライセンスキーを入力</li>
         <li>利用開始</li>
