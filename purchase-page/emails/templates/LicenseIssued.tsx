@@ -8,8 +8,8 @@ interface LicenseIssuedProps {
 
 export function LicenseIssued({ licenseKey, seats, orderId }: LicenseIssuedProps) {
   return (
-    <div style={{ fontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;" }}>
-      <h1 style={{ color: "#059669; border-bottom: 2px solid #059669; padding-bottom: 10px;" }}>
+    <div style={{ fontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif", maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
+      <h1 style={{ color: "#059669", borderBottom: "2px solid #059669", paddingBottom: "10px" }}>
         ライセンスキー発行完了
       </h1>
       

@@ -9,8 +9,8 @@ interface InvoiceNoticeProps {
 
 export function InvoiceNotice({ invoiceNumber, pdfUrl, dueDate, orderId }: InvoiceNoticeProps) {
   return (
-    <div style={{ fontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;" }}>
-      <h1 style={{ color: "#dc2626; border-bottom: 2px solid #dc2626; padding-bottom: 10px;" }}>
+    <div style={{ fontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif", maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
+      <h1 style={{ color: "#dc2626", borderBottom: "2px solid #dc2626", paddingBottom: "10px" }}>
         見積書・請求書送付
       </h1>
       
