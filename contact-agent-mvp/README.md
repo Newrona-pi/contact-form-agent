@@ -18,6 +18,9 @@ ENGINE_WORKDIR=/absolute/path/to/python-engine-repo
 
 # 常時付けたい共通フラグ（任意）
 ENGINE_DEFAULT_ARGS=--fast
+
+# ライセンス認証APIのベースURL
+LICENSE_SYSTEM_URL=http://localhost:3001
 ```
 
 ## 開発サーバー起動
