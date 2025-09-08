@@ -1,5 +1,5 @@
 あなたは「法人向けソフトウェア販売フロー」の実装を行うシニアフルスタックエンジニアです。  
-Next.js 14(App Router) + TypeScript + Prisma(PostgreSQL) + Tailwind + shadcn/ui + React Hook Form + Zod + Stripe + Resend を使い、**フォーム入力(ステップ式) → 確認ページ → 完了(サンクス) → バックエンド処理(決済/見積/請求/ライセンス発行)** までの一連の実装を、動くコード一式（ディレクトリ構成、全ファイル）で出力してください。  
+Next.js 14(App Router) + TypeScript + Prisma(SQLite) + Tailwind + shadcn/ui + React Hook Form + Zod + Stripe + Resend を使い、**フォーム入力(ステップ式) → 確認ページ → 完了(サンクス) → バックエンド処理(決済/見積/請求/ライセンス発行)** までの一連の実装を、動くコード一式（ディレクトリ構成、全ファイル）で出力してください。
 対象プロダクト名は仮で **「FormAutoFiller Pro」** とします。UI文言は日本語、タイムゾーンは **Asia/Tokyo** でお願いします。
 
 # 要求（最重要）
@@ -14,7 +14,7 @@ Next.js 14(App Router) + TypeScript + Prisma(PostgreSQL) + Tailwind + shadcn/ui 
   - Next.js 14 App Router、TypeScript strict
   - UI: Tailwind + shadcn/ui（Form/Input/Select/Checkbox/Alert/Dialog/Stepper相当は自作でもOK）
   - フォーム: React Hook Form + Zod（**日本語のエラーメッセージ**）
-  - DB: Prisma + PostgreSQL（Dockerなしで動く前提／接続文字列はENV）
+    - DB: Prisma + SQLite（Docker不要／接続文字列はENV。PostgreSQLに切り替え可能）
   - 決済: Stripe（即時購入のとき）
   - メール: Resend（Nodemailerをfallbackに可能な設計）
   - キャッシュ/Rate Limit: ミドルウェアで**簡易レート制限**（例：Upstash Redis or in-memory stub）
