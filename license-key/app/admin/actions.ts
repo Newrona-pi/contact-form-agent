@@ -27,7 +27,7 @@ export async function issueLicenseAction(_prevState: State, formData: FormData):
   const body = parsed.data;
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/admin/issue-license`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/api/admin/issue-license`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
