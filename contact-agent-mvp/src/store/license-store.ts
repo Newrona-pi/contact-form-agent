@@ -7,7 +7,7 @@ interface LicenseState {
   setLicenseValid: (key: string) => void;
   clearLicense: () => void;
   checkLicense: () => boolean;
-  verifyLicense: (key: string) => Promise<boolean>;
+  verifyLicense: (email: string, key: string) => Promise<boolean>;
 }
 
 export const useLicenseStore = create<LicenseState>()(
@@ -52,14 +52,14 @@ export const useLicenseStore = create<LicenseState>()(
         return get().isLicenseValid;
       },
 
-      verifyLicense: async (key: string) => {
+      verifyLicense: async (email: string, key: string) => {
         try {
           const response = await fetch('/api/auth/verify-license', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ licenseKey: key }),
+            body: JSON.stringify({ email, licenseKey: key }),
           });
 
           const result = await response.json();
