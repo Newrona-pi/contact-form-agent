@@ -12,6 +12,7 @@ interface LicenseScreenProps {
 }
 
 export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
+  const [email, setEmail] = useState('');
   const [licenseKey, setLicenseKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +29,10 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ licenseKey: licenseKey.trim() }),
+        body: JSON.stringify({
+          email: email.trim(),
+          licenseKey: licenseKey.trim(),
+        }),
       });
 
       const result = await response.json();
@@ -66,6 +70,17 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Input
+                type="email"
+                placeholder="メールアドレスを入力してください"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="text-center text-lg"
+                disabled={isLoading}
+                required
+              />
+            </div>
+            <div>
+              <Input
                 type="text"
                 placeholder="ライセンスキーを入力してください"
                 value={licenseKey}
@@ -87,7 +102,9 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
               type="submit"
               className="w-full"
               size="lg"
-              disabled={isLoading || !licenseKey.trim()}
+              disabled={
+                isLoading || !email.trim() || !licenseKey.trim()
+              }
             >
               {isLoading ? '認証中...' : '認証する'}
             </Button>
