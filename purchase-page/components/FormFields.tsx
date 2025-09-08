@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,7 +14,7 @@ interface FormFieldsProps {
 }
 
 export function FormFields({ section }: FormFieldsProps) {
-  const { register, watch, setValue, formState: { errors } } = useFormContext<PurchaseFormData>();
+  const { register, control, watch, setValue, formState: { errors } } = useFormContext<PurchaseFormData>();
   const watchedEmail = watch("email");
   const watchedCompanyName = watch("company_name");
   const watchedPaymentMethod = watch("payment_method");
@@ -336,10 +336,17 @@ export function FormFields({ section }: FormFieldsProps) {
         </div>
 
         <div className="flex items-start space-x-2">
-          <Checkbox
-            id="agree_tos"
-            data-testid="agree_tos"
-            {...register("agree_tos")}
+          <Controller
+            name="agree_tos"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="agree_tos"
+                data-testid="agree_tos"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
           <div className="grid gap-1.5 leading-none">
             <Label

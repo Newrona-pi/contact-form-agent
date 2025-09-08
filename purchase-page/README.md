@@ -15,7 +15,7 @@ Next.js 14 + TypeScript + Prisma + Stripe + Resend を使用した法人向け�
 
 - **フロントエンド**: Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
 - **バックエンド**: Next.js API Routes, Prisma ORM
-- **データベース**: PostgreSQL
+- **データベース**: SQLite (開発) / PostgreSQL (本番)
 - **決済**: Stripe
 - **メール**: Resend
 - **フォーム**: React Hook Form + Zod
@@ -48,7 +48,7 @@ cp env.example .env.local
 
 ```env
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/formautofiller_pro"
+DATABASE_URL="file:./prisma/dev.db"
 
 # Stripe
 STRIPE_SECRET_KEY="sk_test_..."
@@ -157,7 +157,7 @@ npx playwright show-report
 
 1. Vercelにプロジェクトをインポート
 2. 環境変数を設定
-3. データベース（PostgreSQL）をセットアップ
+3. データベースをセットアップ（本番ではPostgreSQLを推奨）
 4. デプロイ
 
 ### その他のプラットフォーム
@@ -196,7 +196,7 @@ npx playwright show-report
 
 1. **データベース接続エラー**
    - `DATABASE_URL` が正しく設定されているか確認
-   - PostgreSQLが起動しているか確認
+   - SQLiteのDBファイルにアクセスできるか確認
 
 2. **Stripe決済エラー**
    - `STRIPE_SECRET_KEY` が正しく設定されているか確認

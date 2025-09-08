@@ -1,6 +1,12 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// APIキーが設定されていない環境ではメール送信をスキップする
+let resend: Resend | null = null;
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+} else {
+  console.warn("RESEND_API_KEY is not set. Email functionality is disabled.");
+}
 
 // メール送信関数
 export async function sendEmail({
@@ -16,6 +22,11 @@ export async function sendEmail({
   html: string;
   text?: string;
 }) {
+  if (!resend) {
+    console.warn("Skipping email send because RESEND_API_KEY is not configured.");
+    return { success: false, error: "RESEND_API_KEY is not configured" };
+  }
+
   try {
     const result = await resend.emails.send({
       from: "FormAutoFiller Pro <noreply@formautofiller-pro.com>",
@@ -29,7 +40,10 @@ export async function sendEmail({
     return { success: true, messageId: result.data?.id };
   } catch (error) {
     console.error("メール送信エラー:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
 
