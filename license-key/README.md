@@ -46,6 +46,8 @@ SMTP_FROM="Your App <no-reply@example.com>"
 # アプリ表示
 APP_NAME="My License App"
 APP_BASE_URL="http://localhost:3000"
+# サーバーアクションで内部APIを呼び出すベースURL
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
 ### 3. データベースの初期化
