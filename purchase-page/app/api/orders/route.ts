@@ -68,9 +68,16 @@ async function createOrder(request: NextRequest) {
         },
       });
 
-      // 担当者情報作成
-      const contact = await tx.contact.create({
-        data: {
+      // 担当者情報作成（既存メールアドレスは更新して再利用）
+      const contact = await tx.contact.upsert({
+        where: { email: validatedData.email },
+        update: {
+          companyId: company.id,
+          name: validatedData.contact_name,
+          kana: validatedData.contact_kana,
+          phone: validatedData.phone,
+        },
+        create: {
           companyId: company.id,
           name: validatedData.contact_name,
           kana: validatedData.contact_kana,
