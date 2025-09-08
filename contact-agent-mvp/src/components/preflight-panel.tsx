@@ -19,9 +19,6 @@ export function PreflightPanel({ request, onRunStart }: PreflightPanelProps) {
   
   const preflightMutation = useMutation({
     mutationFn: api.preflight,
-    onSuccess: (data) => {
-      // 成功時の処理
-    },
   });
 
   const handlePreflight = () => {
