@@ -9,6 +9,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init"
   },
+  
   "dependencies": {
     "@prisma/client": "^5.18.0",
     "argon2": "^0.41.1",
