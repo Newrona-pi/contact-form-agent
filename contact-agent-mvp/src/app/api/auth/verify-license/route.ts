@@ -4,12 +4,13 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 const Body = z.object({
+  email: z.string().email(),
   licenseKey: z.string().min(8),
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const { licenseKey } = Body.parse(await req.json());
+    const { email, licenseKey } = Body.parse(await req.json());
 
     // 環境変数の取得状況をログ出力
     const licenseSystemUrl = process.env.LICENSE_SYSTEM_URL || 'http://localhost:3001';
@@ -25,11 +26,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        email: 'admin@contact-agent.com', // 管理者用の固定メールアドレス
-        licenseKey: licenseKey,
-        device: 'contact-agent-mvp'
-      }),
+      body: JSON.stringify({ email, licenseKey }),
     });
 
     if (response.ok) {

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { generateLicenseKey } from "@/lib/license";
-import { sendLicenseIssued } from "@/lib/mailer";
 import { logPaymentSuccess, logLicenseIssued, logError } from "@/lib/logger";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -93,17 +91,6 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         data: { status: "SUCCEEDED" },
       });
 
-      // ライセンス生成
-      const licenseKey = generateLicenseKey();
-      await tx.license.create({
-        data: {
-          orderId,
-          key: licenseKey,
-          status: "ACTIVE",
-          seats: order.seats,
-        },
-      });
-
       // 請求書作成（請求書払いの場合）
       if (order.paymentMethod === "INVOICE") {
         const invoiceNumber = `INV-${Date.now()}`;
@@ -120,20 +107,44 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     // ログ記録
     logPaymentSuccess(orderId, order.contact.email, order.totalAmount);
 
-    // ライセンス発行メール送信
-    const license = await prisma.license.findFirst({
-      where: { orderId },
-    });
+    // ライセンス発行 API 呼び出し
+    try {
+      const response = await fetch(
+        `${process.env.LICENSE_KEY_URL}/api/admin/issue-license`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": process.env.LICENSE_KEY_ADMIN_TOKEN!,
+          },
+          body: JSON.stringify({
+            email: order.contact.email,
+            plan: order.plan,
+            activationLimit: order.seats,
+          }),
+        }
+      );
 
-    if (license) {
-      await sendLicenseIssued({
-        to: order.contact.email,
-        licenseKey: license.key,
-        seats: order.seats,
-        orderId,
-      });
+      if (!response.ok) {
+        throw new Error(`License API responded with ${response.status}`);
+      }
 
-      logLicenseIssued(orderId, license.key, order.seats);
+      const { licenseId } = await response.json();
+
+      if (licenseId) {
+        await prisma.license.create({
+          data: {
+            orderId,
+            key: licenseId,
+            status: "ACTIVE",
+            seats: order.seats,
+          },
+        });
+
+        logLicenseIssued(orderId, licenseId, order.seats);
+      }
+    } catch (error) {
+      logError(error as Error, { action: "issue_license", orderId });
     }
 
   } catch (error) {
