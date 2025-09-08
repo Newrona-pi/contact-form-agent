@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,18 +29,19 @@ export default function RunMonitor() {
     staleTime: 0,
     gcTime: 0,
     retry: false,
-    onSuccess: (data) => {
-      // サーバ上にジョブが無い（404→null）場合は監視終了 & runId クリア
-      if (data === null) {
-        clearRun();
-      }
-    },
-    // 念のため: API が 404 を throw する実装でも止められるよう保険
-    onError: (err: any) => {
-      const msg = typeof err?.message === "string" ? err.message : "";
-      if (msg.includes("404")) clearRun();
-    },
   });
+
+  useEffect(() => {
+    if (runQuery.data === null) {
+      clearRun();
+    }
+  }, [runQuery.data, clearRun]);
+
+  useEffect(() => {
+    const err: any = runQuery.error;
+    const msg = typeof err?.message === "string" ? err.message : "";
+    if (msg.includes("404")) clearRun();
+  }, [runQuery.error, clearRun]);
 
   const run = runQuery.data;
 
