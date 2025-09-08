@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ export default function PurchasePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const formStartTimeRef = useRef(Date.now());
 
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseFormSchema),
@@ -107,7 +108,7 @@ export default function PurchasePage() {
         },
         body: JSON.stringify({
           ...data,
-          submitTime: Date.now(),
+          submitTime: formStartTimeRef.current,
           honeypot: "", // ハニーポット
         }),
       });
