@@ -35,6 +35,9 @@ export async function POST(req: NextRequest) {
   console.log('=====================================');
 
   const db = getDb();
+  if (!db) {
+    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+  }
   const licRef = await db.collection("licenses").add({
     email,
     keyId,

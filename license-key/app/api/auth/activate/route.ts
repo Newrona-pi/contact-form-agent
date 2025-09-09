@@ -17,6 +17,9 @@ const Body = z.object({
 export async function POST(req: NextRequest) {
   const { email, licenseKey, device } = Body.parse(await req.json());
   const db = getDb();
+  if (!db) {
+    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+  }
 
   // デバッグ情報を出力
   console.log('=== ライセンス認証（デバッグ） ===');
