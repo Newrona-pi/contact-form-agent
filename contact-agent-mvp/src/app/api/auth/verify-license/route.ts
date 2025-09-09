@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const { email, licenseKey } = Body.parse(await req.json());
 
     // 環境変数の取得状況をログ出力
-    const licenseSystemUrl = process.env.LICENSE_SYSTEM_URL || 'http://localhost:3001';
+    const licenseSystemUrl = process.env.LICENSE_SYSTEM_URL || 'http://localhost:3002';
     console.log('Environment variables:', {
       LICENSE_SYSTEM_URL: process.env.LICENSE_SYSTEM_URL,
       NODE_ENV: process.env.NODE_ENV,
