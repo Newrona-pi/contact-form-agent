@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import argon2 from "argon2";
+import { hash, verify } from "@node-rs/argon2";
 
 function group4(s: string) {
   return s.match(/.{1,4}/g)?.join("-") ?? s;
@@ -29,9 +29,9 @@ export function parseLicense(full: string) {
 }
 
 export async function hashSecret(secret: string) {
-  return argon2.hash(secret);
+  return hash(secret);
 }
 
-export async function verifySecret(hash: string, secret: string) {
-  return argon2.verify(hash, secret);
+export async function verifySecret(hashString: string, secret: string) {
+  return verify(hashString, secret);
 }
