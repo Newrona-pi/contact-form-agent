@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/firebase";
 import { generateKeyId, generateSecret, formatLicense, hashSecret } from "@/lib/license";
 import { z } from "zod";
 import { sendLicenseEmail } from "@/lib/mailer";
@@ -34,18 +34,18 @@ export async function POST(req: NextRequest) {
   console.log('Secret Hash:', secretHash);
   console.log('=====================================');
 
-  const lic = await prisma.license.create({
-    data: {
-      email,
-      keyId,
-      secretHash,
-      plan,
-      activationLimit,
-      status: "UNCLAIMED",
-    },
+  const licRef = await db.collection("licenses").add({
+    email,
+    keyId,
+    secretHash,
+    plan,
+    activationLimit,
+    status: "UNCLAIMED",
+    activationCount: 0,
+    createdAt: new Date(),
   });
 
   await sendLicenseEmail(email, fullKey);
 
-  return NextResponse.json({ ok: true, licenseId: lic.id });
+  return NextResponse.json({ ok: true, licenseId: licRef.id });
 }
