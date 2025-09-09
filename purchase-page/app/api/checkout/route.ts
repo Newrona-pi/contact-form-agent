@@ -19,6 +19,19 @@ interface Order {
 
 type OrderData = Omit<Order, "id">;
 
+interface Order {
+  id: string;
+  paymentMethod: string;
+  status: string;
+  totalAmount: number;
+  company: {
+    name: string;
+  };
+  contact: {
+    email: string;
+  };
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
 });
@@ -41,17 +54,16 @@ async function createPaymentIntent(request: NextRequest) {
       return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
     }
 
-    const orderData = orderDoc.data() as OrderData | undefined;
-    if (
-      !orderData ||
-      !orderData.paymentMethod ||
-      !orderData.status ||
-      !orderData.company?.name ||
-      !orderData.contact?.email
-    ) {
-      return NextResponse.json({ error: "注文データが不正です" }, { status: 500 });
-    }
-
+const orderData = orderDoc.data() as OrderData | undefined;
+if (
+  !orderData ||
+  !orderData.paymentMethod ||
+  !orderData.status ||
+  !orderData.company?.name ||
+  !orderData.contact?.email
+) {
+  return NextResponse.json({ error: "注文データが不正です" }, { status: 500 });
+}
     const order: Order = {
       id: orderDoc.id,
       ...orderData,

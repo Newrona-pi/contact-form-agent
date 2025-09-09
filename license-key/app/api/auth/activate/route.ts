@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/firebase";
-import { signJWT } from "@/lib/jwt";
+import { createAccessToken } from "@/lib/jwt";
+import { parseLicense } from "@/lib/license";
 import { z } from "zod";
 import { FieldValue } from "firebase-admin/firestore";
 import { createHash } from "crypto";
@@ -19,18 +20,29 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
 
+    // ライセンスキーを解析してkeyIdを抽出
+    let keyId: string;
+    try {
+      const parsed = parseLicense(licenseKey);
+      keyId = parsed.keyId;
+    } catch (error) {
+      return NextResponse.json({ 
+        error: "ライセンスキーの形式が正しくありません" 
+      }, { status: 400 });
+    }
+
     // ライセンス検索
     const licensesSnapshot = await db
       .collection("licenses")
-      .where("keyId", "==", licenseKey)
+      .where("keyId", "==", keyId)
       .where("email", "==", email)
       .limit(1)
       .get();
 
     if (licensesSnapshot.empty) {
-      return NextResponse.json({ 
+      return withCors(NextResponse.json({ 
         error: "ライセンスキーまたはメールアドレスが正しくありません" 
-      }, { status: 404 });
+      }, { status: 404 }));
     }
 
     const licenseDoc = licensesSnapshot.docs[0];
@@ -39,23 +51,23 @@ export async function POST(request: NextRequest) {
 
     // ライセンスステータスチェック
     if (licenseData.status !== "UNCLAIMED" && licenseData.status !== "ACTIVE") {
-      return NextResponse.json({ 
+      return withCors(NextResponse.json({ 
         error: "このライセンスは使用できません" 
-      }, { status: 400 });
+      }, { status: 400 }));
     }
 
     // 期限チェック
     if (licenseData.expiresAt && new Date(licenseData.expiresAt.toDate()) < new Date()) {
-      return NextResponse.json({ 
+      return withCors(NextResponse.json({ 
         error: "ライセンスの有効期限が切れています" 
-      }, { status: 400 });
+      }, { status: 400 }));
     }
 
     // アクティベーション制限チェック
     if (licenseData.activationCount >= licenseData.activationLimit) {
-      return NextResponse.json({ 
+      return withCors(NextResponse.json({ 
         error: "アクティベーション制限に達しています" 
-      }, { status: 400 });
+      }, { status: 400 }));
     }
 
     // IPアドレスのハッシュ化
@@ -88,15 +100,15 @@ export async function POST(request: NextRequest) {
     await licenseDoc.ref.update(updateData);
 
     // JWTトークン生成
-    const token = await signJWT({
+    const token = await createAccessToken({
       licenseId,
       email,
       plan: licenseData.plan,
       activationCount: updateData.activationCount,
-    });
+    }, "30d");
 
     // レスポンス設定
-    const response = NextResponse.json({
+    const response = withCors(NextResponse.json({
       success: true,
       message: "ライセンスが正常にアクティベートされました",
       license: {
@@ -105,7 +117,7 @@ export async function POST(request: NextRequest) {
         activationLimit: licenseData.activationLimit,
         expiresAt: licenseData.expiresAt,
       },
-    });
+    }));
 
     // HttpOnly CookieにJWTを設定
     response.cookies.set("auth-token", token, {
@@ -121,19 +133,35 @@ export async function POST(request: NextRequest) {
     console.error("ライセンスアクティベーションエラー:", error);
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
+      return withCors(NextResponse.json({ 
         error: "入力データが無効です", 
         details: error.errors 
-      }, { status: 400 });
+      }, { status: 400 }));
     }
 
-    return NextResponse.json({ 
+    return withCors(NextResponse.json({ 
       error: "ライセンスアクティベーションに失敗しました" 
-    }, { status: 500 });
+    }, { status: 500 }));
   }
 }
 
 // IPアドレスのハッシュ化
+const ALLOWED_ORIGIN =
+  process.env.NEXT_PUBLIC_CONTACT_APP_ORIGIN || "http://localhost:3001";
+
+function withCors(res: NextResponse): NextResponse {
+  res.headers.set("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  res.headers.set("Vary", "Origin");
+  res.headers.set("Access-Control-Allow-Credentials", "true");
+  res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  return res;
+}
+
+export function OPTIONS() {
+  return withCors(new NextResponse(null, { status: 204 }));
+}
+
 function hashIP(ip: string): string {
-  return createHash('sha256').update(ip).digest('hex');
+  return createHash("sha256").update(ip).digest("hex");
 }

@@ -23,8 +23,9 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
     setError('');
 
     try {
-      // 新しいライセンス検証APIを呼び出し
-      const response = await fetch('/api/auth/verify-license', {
+      // ライセンスアクティベーションAPIを呼び出し（license-keyサービス）
+      const apiBase = process.env.NEXT_PUBLIC_LICENSE_API_BASE || 'http://localhost:3000';
+      const response = await fetch(`${apiBase}/api/auth/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,12 +38,12 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
 
       const result = await response.json();
 
-      if (result.valid) {
+      if (response.ok && result?.success) {
         // ローカルストレージにライセンスキーを保存
         localStorage.setItem('contact-agent-license', licenseKey.trim());
         onLicenseValid(licenseKey.trim());
       } else {
-        setError(result.message || '無効なライセンスキーです。正しいキーを入力してください。');
+        setError(result?.error || result?.message || '無効なライセンスキーです。正しいキーを入力してください。');
       }
     } catch (err) {
       console.error('License verification error:', err);
