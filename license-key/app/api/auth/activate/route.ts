@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/firebase";
+import { FieldValue } from "firebase-admin/firestore";
 import { parseLicense, verifySecret } from "@/lib/license";
 import { createAccessToken } from "@/lib/jwt";
 import { z } from "zod";
@@ -32,8 +33,13 @@ export async function POST(req: NextRequest) {
   console.log('Parsed Key ID:', keyId);
   console.log('Parsed Secret:', secret);
 
-  const lic = await prisma.license.findUnique({ where: { keyId } });
-  if (!lic || lic.email.toLowerCase() !== email.toLowerCase()) {
+  const licSnap = await db.collection("licenses").where("keyId", "==", keyId).limit(1).get();
+  if (licSnap.empty) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
+  const licRef = licSnap.docs[0].ref;
+  const lic = licSnap.docs[0].data();
+  if (lic.email.toLowerCase() !== email.toLowerCase()) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
   if (lic.status === "REVOKED" || lic.status === "EXPIRED") {
@@ -48,26 +54,24 @@ export async function POST(req: NextRequest) {
   //   return NextResponse.json({ error: "ACTIVATION_LIMIT" }, { status: 403 });
   // }
 
-  await prisma.$transaction([
-    prisma.license.update({
-      where: { id: lic.id },
-      data: {
-        status: lic.status === "UNCLAIMED" ? "ACTIVE" : lic.status,
-        activationCount: { increment: 1 },
-        claimedAt: lic.claimedAt ?? new Date(),
-      },
-    }),
-    prisma.activation.create({
-      data: {
-        licenseId: lic.id,
-        device: device ?? null,
-        ipHash: crypto.createHash("sha256").update(req.ip ?? "").digest("hex"),
-        userAgent: req.headers.get("user-agent") ?? undefined,
-      },
-    }),
-  ]);
+  await db.runTransaction(async (t) => {
+    const snap = await t.get(licRef);
+    const data = snap.data()!;
+    t.update(licRef, {
+      status: data.status === "UNCLAIMED" ? "ACTIVE" : data.status,
+      activationCount: FieldValue.increment(1),
+      claimedAt: data.claimedAt ?? new Date(),
+    });
+    t.set(db.collection("activations").doc(), {
+      licenseId: licRef.id,
+      device: device ?? null,
+      ipHash: crypto.createHash("sha256").update(req.ip ?? "").digest("hex"),
+      userAgent: req.headers.get("user-agent") ?? undefined,
+      createdAt: new Date(),
+    });
+  });
 
-  const access = await createAccessToken({ sub: lic.id, email: lic.email, plan: lic.plan }, "30m");
+  const access = await createAccessToken({ sub: licRef.id, email: lic.email, plan: lic.plan }, "30m");
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set("access_token", access, {
