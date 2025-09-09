@@ -1,19 +1,23 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { Firestore, getFirestore } from "firebase-admin/firestore";
 
-export function getDb(): Firestore | null {
+export function getDb(): Firestore {
   if (!getApps().length) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
     if (!projectId || !clientEmail || !privateKey) {
-      return null;
+      throw new Error("Firebase環境変数が設定されていません");
     }
 
-    initializeApp({
-      credential: cert({ projectId, clientEmail, privateKey }),
-    });
+    try {
+      initializeApp({
+        credential: cert({ projectId, clientEmail, privateKey }),
+      });
+    } catch (error) {
+      throw new Error(`Firebase初期化エラー: ${error}`);
+    }
   }
 
   return getFirestore();

@@ -3,6 +3,7 @@ import { getDb } from "@/lib/firebase";
 import { generateKeyId, generateSecret, formatLicense, hashSecret } from "@/lib/license";
 import { sendLicenseEmail } from "@/lib/mailer";
 import { z } from "zod";
+import { FieldValue } from "firebase-admin/firestore";
 
 const issueLicenseSchema = z.object({
   email: z.string().email(),
@@ -23,9 +24,6 @@ export async function POST(request: NextRequest) {
     const { email, plan, activationLimit, expiresAt } = issueLicenseSchema.parse(body);
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json({ error: "データベース接続エラー" }, { status: 500 });
-    }
 
     // ライセンスキー生成
     const keyId = generateKeyId();
@@ -47,8 +45,8 @@ export async function POST(request: NextRequest) {
       activationCount: 0,
       expiresAt: expiresAtTimestamp,
       claimedAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     const licenseRef = await db.collection("licenses").add(licenseData);
@@ -61,7 +59,7 @@ export async function POST(request: NextRequest) {
       email,
       details: `ライセンス発行: ${plan}プラン, アクティベーション制限: ${activationLimit}`,
       adminId: "system", // 実際の実装では認証された管理者IDを使用
-      createdAt: new Date(),
+      createdAt: FieldValue.serverTimestamp(),
     });
 
     // メール送信
