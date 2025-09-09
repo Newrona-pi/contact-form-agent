@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { generateKeyId, generateSecret, formatLicense, hashSecret } from "@/lib/license";
 import { z } from "zod";
 import { sendLicenseEmail } from "@/lib/mailer";
@@ -34,6 +34,10 @@ export async function POST(req: NextRequest) {
   console.log('Secret Hash:', secretHash);
   console.log('=====================================');
 
+  const db = getDb();
+  if (!db) {
+    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+  }
   const licRef = await db.collection("licenses").add({
     email,
     keyId,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { FieldValue } from "firebase-admin/firestore";
 import { parseLicense, verifySecret } from "@/lib/license";
 import { createAccessToken } from "@/lib/jwt";
@@ -16,6 +16,10 @@ const Body = z.object({
 
 export async function POST(req: NextRequest) {
   const { email, licenseKey, device } = Body.parse(await req.json());
+  const db = getDb();
+  if (!db) {
+    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+  }
 
   // デバッグ情報を出力
   console.log('=== ライセンス認証（デバッグ） ===');
