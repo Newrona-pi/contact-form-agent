@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getDb } from "@/lib/firebase";
 import { withRateLimit } from "@/lib/rateLimit";
+import { FieldValue } from "firebase-admin/firestore";
+
+interface Order {
+  id: string;
+  paymentMethod: string;
+  status: string;
+  totalAmount: number;
+  company: {
+    name: string;
+  };
+  contact: {
+    email: string;
+  };
+}
+
+type OrderData = Omit<Order, "id">;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
@@ -17,19 +33,26 @@ async function createPaymentIntent(request: NextRequest) {
     }
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json({ error: "データベース接続エラー" }, { status: 500 });
-    }
 
     // 注文情報取得
     const orderDoc = await db.collection("orders").doc(orderId).get();
-    
+
     if (!orderDoc.exists) {
       return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
     }
 
-    const orderData = orderDoc.data();
-    const order = {
+    const orderData = orderDoc.data() as OrderData | undefined;
+    if (
+      !orderData ||
+      !orderData.paymentMethod ||
+      !orderData.status ||
+      !orderData.company?.name ||
+      !orderData.contact?.email
+    ) {
+      return NextResponse.json({ error: "注文データが不正です" }, { status: 500 });
+    }
+
+    const order: Order = {
       id: orderDoc.id,
       ...orderData,
     };
@@ -58,16 +81,19 @@ async function createPaymentIntent(request: NextRequest) {
     }
 
     // Stripe PaymentIntent作成
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: order.totalAmount,
-      currency: "jpy",
-      metadata: {
-        orderId: order.id,
-        companyName: order.company.name,
-        contactEmail: order.contact.email,
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: order.totalAmount,
+        currency: "jpy",
+        metadata: {
+          orderId: order.id,
+          companyName: order.company.name,
+          contactEmail: order.contact.email,
+        },
+        description: `FormAutoFiller Pro - ${order.company.name}`,
       },
-      description: `FormAutoFiller Pro - ${order.company.name}`,
-    });
+      { idempotencyKey: `order-${order.id}` }
+    );
 
     // PaymentIntentをFirestoreに保存
     await db.collection("paymentIntents").add({
@@ -75,8 +101,8 @@ async function createPaymentIntent(request: NextRequest) {
       provider: "STRIPE",
       clientSecret: paymentIntent.client_secret!,
       status: "PENDING",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     return NextResponse.json({

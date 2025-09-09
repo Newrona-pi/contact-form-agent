@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/firebase";
 import { z } from "zod";
 import { withRateLimit } from "@/lib/rateLimit";
+import { FieldValue } from "firebase-admin/firestore";
 
 const orderSchema = z.object({
   company: z.object({
@@ -50,9 +51,6 @@ async function createOrder(request: NextRequest) {
     const validatedData = orderSchema.parse(body);
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json({ error: "データベース接続エラー" }, { status: 500 });
-    }
 
     // 合計金額計算
     const totalAmount = calculateTotalAmount(validatedData.plan, validatedData.seats);
@@ -62,8 +60,8 @@ async function createOrder(request: NextRequest) {
       ...validatedData,
       totalAmount,
       status: "PENDING_PAYMENT",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     // Firestoreに注文を保存

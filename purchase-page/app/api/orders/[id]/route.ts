@@ -10,9 +10,6 @@ export async function GET(
     const orderId = params.id;
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json({ error: "データベース接続エラー" }, { status: 500 });
-    }
 
     // 注文取得
     const orderDoc = await db.collection("orders").doc(orderId).get();

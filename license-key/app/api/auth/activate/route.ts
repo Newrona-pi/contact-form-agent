@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/firebase";
 import { signJWT } from "@/lib/jwt";
 import { z } from "zod";
+import { FieldValue } from "firebase-admin/firestore";
+import { createHash } from "crypto";
 
 const activateSchema = z.object({
   email: z.string().email(),
@@ -16,9 +18,6 @@ export async function POST(request: NextRequest) {
     const { email, licenseKey, device, userAgent } = activateSchema.parse(body);
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json({ error: "データベース接続エラー" }, { status: 500 });
-    }
 
     // ライセンス検索
     const licensesSnapshot = await db
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
     const clientIP = request.headers.get("x-forwarded-for") || 
                     request.headers.get("x-real-ip") || 
                     "unknown";
-    const ipHash = await hashIP(clientIP);
+    const ipHash = hashIP(clientIP);
 
     // アクティベーション記録作成
     await db.collection("activations").add({
@@ -71,19 +70,19 @@ export async function POST(request: NextRequest) {
       device: device || "unknown",
       ipHash,
       userAgent: userAgent || "unknown",
-      createdAt: new Date(),
+      createdAt: FieldValue.serverTimestamp(),
     });
 
     // ライセンス更新
     const updateData: any = {
       activationCount: licenseData.activationCount + 1,
-      updatedAt: new Date(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     // 初回アクティベーションの場合
     if (licenseData.status === "UNCLAIMED") {
       updateData.status = "ACTIVE";
-      updateData.claimedAt = new Date();
+      updateData.claimedAt = FieldValue.serverTimestamp();
     }
 
     await licenseDoc.ref.update(updateData);
@@ -135,7 +134,6 @@ export async function POST(request: NextRequest) {
 }
 
 // IPアドレスのハッシュ化
-async function hashIP(ip: string): Promise<string> {
-  const crypto = await import('crypto');
-  return crypto.createHash('sha256').update(ip).digest('hex');
+function hashIP(ip: string): string {
+  return createHash('sha256').update(ip).digest('hex');
 }
