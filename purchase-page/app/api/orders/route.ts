@@ -1,174 +1,101 @@
 import { NextRequest, NextResponse } from "next/server";
-import { firestore } from "@/lib/firebase";
-import { purchaseFormSchema, isFreeEmailDomain } from "@/lib/zodSchemas";
-import { calculateTotalAmountFromForm, convertFormPlanToDbPlan } from "@/lib/price";
-import { sendApplicationReceipt } from "@/lib/mailer";
-import { logOrderCreation, logError } from "@/lib/logger";
+import { getDb } from "@/lib/firebase";
+import { z } from "zod";
 import { withRateLimit } from "@/lib/rateLimit";
 
-// 注文作成API
+const orderSchema = z.object({
+  company: z.object({
+    name: z.string().min(1),
+    department: z.string().optional(),
+    addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    postalCode: z.string().optional(),
+    city: z.string().optional(),
+    prefecture: z.string().optional(),
+  }),
+  contact: z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    phone: z.string().optional(),
+    position: z.string().optional(),
+  }),
+  billing: z.object({
+    name: z.string().optional(),
+    department: z.string().optional(),
+    addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    postalCode: z.string().optional(),
+    city: z.string().optional(),
+    prefecture: z.string().optional(),
+  }).optional(),
+  plan: z.enum(['ONE_TIME', 'MONTHLY', 'ANNUAL']),
+  seats: z.number().min(1),
+  paymentMethod: z.enum(['CREDIT', 'INVOICE']),
+});
+
+// 料金計算
+function calculateTotalAmount(plan: string, seats: number): number {
+  const planPrices: Record<string, number> = {
+    ONE_TIME: 29800,
+    MONTHLY: 1980,
+    ANNUAL: 19800,
+  };
+  
+  return planPrices[plan] * seats;
+}
+
 async function createOrder(request: NextRequest) {
   try {
     const body = await request.json();
+    const validatedData = orderSchema.parse(body);
 
-    // ハニーポットチェック
-    if (body.honeypot) {
-      return NextResponse.json({ error: "不正な送信です" }, { status: 400 });
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json({ error: "データベース接続エラー" }, { status: 500 });
     }
 
-    // 送信時間チェック（最低3秒）
-    const submitTime = body.submitTime;
-    if (!submitTime || Date.now() - submitTime < 3000) {
-      return NextResponse.json({ error: "送信が早すぎます" }, { status: 400 });
-    }
+    // 合計金額計算
+    const totalAmount = calculateTotalAmount(validatedData.plan, validatedData.seats);
 
-    // バリデーション
-    const validatedData = purchaseFormSchema.parse(body);
-
-    // フリーメールドメイン警告（ログに記録）
-    if (isFreeEmailDomain(validatedData.email)) {
-      console.warn(`フリーメールドメイン検出: ${validatedData.email}`);
-    }
-
-    const ordersRef = firestore.collection("orders");
-    // 重複チェック（同一メールアドレスで最近の注文）
-    const recentSnapshot = await ordersRef
-      .where("contact.email", "==", validatedData.email)
-      .where("createdAt", ">=", new Date(Date.now() - 24 * 60 * 60 * 1000))
-      .limit(1)
-      .get();
-
-    if (!recentSnapshot.empty) {
-      return NextResponse.json(
-        { error: "24時間以内に同じメールアドレスでの注文があります" },
-        { status: 400 }
-      );
-    }
-
-    // 料金計算
-    const totalAmount = calculateTotalAmountFromForm(
-      validatedData.plan,
-      validatedData.seats
-    );
-
+    // 注文データ作成
     const orderData = {
-      company: {
-        name: validatedData.company_name,
-        kana: validatedData.company_kana,
-        department: validatedData.department,
-        role: validatedData.role,
-        addressZip: validatedData.address_zip,
-        addressPref: validatedData.address_pref,
-        addressCity: validatedData.address_city,
-        addressLine1: validatedData.address_line1,
-        addressLine2: validatedData.address_line2,
-      },
-      contact: {
-        name: validatedData.contact_name,
-        kana: validatedData.contact_kana,
-        email: validatedData.email,
-        phone: validatedData.phone,
-      },
-      plan: convertFormPlanToDbPlan(validatedData.plan),
-      seats: validatedData.seats,
-      startDate: validatedData.start_date ? new Date(validatedData.start_date) : null,
-      useCase: validatedData.use_case,
-      referralCode: validatedData.referral_code,
-      notes: validatedData.notes,
-      paymentMethod: validatedData.payment_method.toUpperCase(),
-      status:
-        validatedData.payment_method === "credit" ? "PENDING_PAYMENT" : "DRAFT",
+      ...validatedData,
       totalAmount,
+      status: "PENDING_PAYMENT",
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    // 注文作成
-    const docRef = await ordersRef.add(orderData);
+    // Firestoreに注文を保存
+    const orderRef = await db.collection("orders").add(orderData);
+    const orderId = orderRef.id;
 
-    // 申込控えメール送信
-    await sendApplicationReceipt({
-      to: validatedData.email,
-      orderData: validatedData,
-      orderId: docRef.id,
-    });
-
-    // ログ記録
-    logOrderCreation(docRef.id, validatedData.email, totalAmount);
+    // 注文データを取得（IDを含む）
+    const createdOrder = {
+      id: orderId,
+      ...orderData,
+    };
 
     return NextResponse.json({
       success: true,
-      orderId: docRef.id,
-      paymentMethod: validatedData.payment_method,
+      order: createdOrder,
+      message: "注文が正常に作成されました",
     });
-  } catch (error) {
-    logError(error as Error, { action: "create_order" });
 
-    if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json(
-        {
-          error: "入力内容に誤りがあります",
-          details: JSON.parse(error.message),
-        },
-        { status: 400 }
-      );
+  } catch (error) {
+    console.error("注文作成エラー:", error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "入力データが無効です", 
+        details: error.errors 
+      }, { status: 400 });
     }
 
-    const err = error as Error;
-    if (process.env.NODE_ENV !== "production") {
-      return NextResponse.json(
-        {
-          error: "注文の作成に失敗しました",
-          message: err.message,
-          stack: err.stack,
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: "注文の作成に失敗しました" },
-      { status: 500 }
-    );
-  }
-}
-
-// 注文一覧取得API（開発用）
-async function getOrders(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const offset = (page - 1) * limit;
-
-    const ordersRef = firestore.collection("orders");
-    const snapshot = await ordersRef
-      .orderBy("createdAt", "desc")
-      .offset(offset)
-      .limit(limit)
-      .get();
-
-    const orders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-    const totalSnapshot = await ordersRef.count().get();
-    const total = totalSnapshot.data().count;
-
-    return NextResponse.json({
-      orders,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    logError(error as Error, { action: "get_orders" });
-    return NextResponse.json(
-      { error: "注文一覧の取得に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      error: "注文作成に失敗しました" 
+    }, { status: 500 });
   }
 }
 
 export const POST = withRateLimit(createOrder);
-export const GET = withRateLimit(getOrders);

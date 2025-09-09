@@ -1,89 +1,141 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/firebase";
-import { FieldValue } from "firebase-admin/firestore";
-import { parseLicense, verifySecret } from "@/lib/license";
-import { createAccessToken } from "@/lib/jwt";
+import { signJWT } from "@/lib/jwt";
 import { z } from "zod";
-import crypto from "crypto";
 
-export const runtime = "nodejs"; // argon2使用のためNode実行
-
-const Body = z.object({
+const activateSchema = z.object({
   email: z.string().email(),
-  licenseKey: z.string().min(8),
+  licenseKey: z.string().min(1),
   device: z.string().optional(),
+  userAgent: z.string().optional(),
 });
 
-export async function POST(req: NextRequest) {
-  const { email, licenseKey, device } = Body.parse(await req.json());
-  const db = getDb();
-  if (!db) {
-    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
-  }
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email, licenseKey, device, userAgent } = activateSchema.parse(body);
 
-  // デバッグ情報を出力
-  console.log('=== ライセンス認証（デバッグ） ===');
-  console.log('Email:', email);
-  console.log('License Key:', licenseKey);
-  console.log('Device:', device);
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json({ error: "データベース接続エラー" }, { status: 500 });
+    }
 
-  let keyId: string, secret: string;
-  try { ({ keyId, secret } = parseLicense(licenseKey)); }
-  catch { 
-    console.log('License parsing failed');
-    return NextResponse.json({ error: "INVALID_LICENSE" }, { status: 400 }); 
-  }
+    // ライセンス検索
+    const licensesSnapshot = await db
+      .collection("licenses")
+      .where("keyId", "==", licenseKey)
+      .where("email", "==", email)
+      .limit(1)
+      .get();
 
-  console.log('Parsed Key ID:', keyId);
-  console.log('Parsed Secret:', secret);
+    if (licensesSnapshot.empty) {
+      return NextResponse.json({ 
+        error: "ライセンスキーまたはメールアドレスが正しくありません" 
+      }, { status: 404 });
+    }
 
-  const licSnap = await db.collection("licenses").where("keyId", "==", keyId).limit(1).get();
-  if (licSnap.empty) {
-    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-  }
-  const licRef = licSnap.docs[0].ref;
-  const lic = licSnap.docs[0].data();
-  if (lic.email.toLowerCase() !== email.toLowerCase()) {
-    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-  }
-  if (lic.status === "REVOKED" || lic.status === "EXPIRED") {
-    return NextResponse.json({ error: lic.status }, { status: 403 });
-  }
-  if (!(await verifySecret(lic.secretHash, secret))) {
-    return NextResponse.json({ error: "INVALID_LICENSE" }, { status: 403 });
-  }
+    const licenseDoc = licensesSnapshot.docs[0];
+    const licenseData = licenseDoc.data();
+    const licenseId = licenseDoc.id;
 
-  // アクティベーション制御（開発環境では無効化）
-  // if (lic.activationCount >= lic.activationLimit) {
-  //   return NextResponse.json({ error: "ACTIVATION_LIMIT" }, { status: 403 });
-  // }
+    // ライセンスステータスチェック
+    if (licenseData.status !== "UNCLAIMED" && licenseData.status !== "ACTIVE") {
+      return NextResponse.json({ 
+        error: "このライセンスは使用できません" 
+      }, { status: 400 });
+    }
 
-  await db.runTransaction(async (t) => {
-    const snap = await t.get(licRef);
-    const data = snap.data()!;
-    t.update(licRef, {
-      status: data.status === "UNCLAIMED" ? "ACTIVE" : data.status,
-      activationCount: FieldValue.increment(1),
-      claimedAt: data.claimedAt ?? new Date(),
-    });
-    t.set(db.collection("activations").doc(), {
-      licenseId: licRef.id,
-      device: device ?? null,
-      ipHash: crypto.createHash("sha256").update(req.ip ?? "").digest("hex"),
-      userAgent: req.headers.get("user-agent") ?? undefined,
+    // 期限チェック
+    if (licenseData.expiresAt && new Date(licenseData.expiresAt.toDate()) < new Date()) {
+      return NextResponse.json({ 
+        error: "ライセンスの有効期限が切れています" 
+      }, { status: 400 });
+    }
+
+    // アクティベーション制限チェック
+    if (licenseData.activationCount >= licenseData.activationLimit) {
+      return NextResponse.json({ 
+        error: "アクティベーション制限に達しています" 
+      }, { status: 400 });
+    }
+
+    // IPアドレスのハッシュ化
+    const clientIP = request.headers.get("x-forwarded-for") || 
+                    request.headers.get("x-real-ip") || 
+                    "unknown";
+    const ipHash = await hashIP(clientIP);
+
+    // アクティベーション記録作成
+    await db.collection("activations").add({
+      licenseId,
+      device: device || "unknown",
+      ipHash,
+      userAgent: userAgent || "unknown",
       createdAt: new Date(),
     });
-  });
 
-  const access = await createAccessToken({ sub: licRef.id, email: lic.email, plan: lic.plan }, "30m");
+    // ライセンス更新
+    const updateData: any = {
+      activationCount: licenseData.activationCount + 1,
+      updatedAt: new Date(),
+    };
 
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set("access_token", access, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 30,
-  });
-  return res;
+    // 初回アクティベーションの場合
+    if (licenseData.status === "UNCLAIMED") {
+      updateData.status = "ACTIVE";
+      updateData.claimedAt = new Date();
+    }
+
+    await licenseDoc.ref.update(updateData);
+
+    // JWTトークン生成
+    const token = await signJWT({
+      licenseId,
+      email,
+      plan: licenseData.plan,
+      activationCount: updateData.activationCount,
+    });
+
+    // レスポンス設定
+    const response = NextResponse.json({
+      success: true,
+      message: "ライセンスが正常にアクティベートされました",
+      license: {
+        plan: licenseData.plan,
+        activationCount: updateData.activationCount,
+        activationLimit: licenseData.activationLimit,
+        expiresAt: licenseData.expiresAt,
+      },
+    });
+
+    // HttpOnly CookieにJWTを設定
+    response.cookies.set("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30, // 30日
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error("ライセンスアクティベーションエラー:", error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "入力データが無効です", 
+        details: error.errors 
+      }, { status: 400 });
+    }
+
+    return NextResponse.json({ 
+      error: "ライセンスアクティベーションに失敗しました" 
+    }, { status: 500 });
+  }
+}
+
+// IPアドレスのハッシュ化
+async function hashIP(ip: string): Promise<string> {
+  const crypto = await import('crypto');
+  return crypto.createHash('sha256').update(ip).digest('hex');
 }
