@@ -124,16 +124,25 @@ async function createOrder(request: NextRequest) {
 
   } catch (error) {
     logError(error as Error, { action: "create_order" });
-    
+
     if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: "入力内容に誤りがあります",
         details: JSON.parse(error.message)
       }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      error: "注文の作成に失敗しました" 
+    const err = error as Error;
+    if (process.env.NODE_ENV !== "production") {
+      return NextResponse.json({
+        error: "注文の作成に失敗しました",
+        message: err.message,
+        stack: err.stack,
+      }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      error: "注文の作成に失敗しました"
     }, { status: 500 });
   }
 }
