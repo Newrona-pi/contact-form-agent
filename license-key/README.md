@@ -11,8 +11,7 @@
 ## スタック
 
 - Next.js (App Router)
-- Prisma
-- SQLite(デフォルト) / PostgreSQL(切替可)
+- Firebase
 - Nodemailer(SMTP)
 - JWT認証
 
@@ -29,8 +28,10 @@ npm install
 `.env`ファイルを作成し、以下の内容を設定してください：
 
 ```env
-# DB
-DATABASE_URL="file:./dev.db"
+# Firebase
+FIREBASE_PROJECT_ID="your-project-id"
+FIREBASE_PRIVATE_KEY="your-private-key"
+FIREBASE_CLIENT_EMAIL="your-client-email"
 
 # 認証
 JWT_SECRET="change_me_long_random"
@@ -50,14 +51,7 @@ APP_BASE_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-### 3. データベースの初期化
-
-```bash
-npx prisma generate
-npm run prisma:migrate
-```
-
-### 4. 開発サーバーの起動
+### 3. 開発サーバーの起動
 
 ```bash
 npm run dev
@@ -109,12 +103,10 @@ license-key/
 │   └── globals.css
 ├── src/
 │   └── lib/
-│       ├── prisma.ts
+│       ├── firebase.ts
 │       ├── jwt.ts
 │       ├── license.ts
 │       └── mailer.ts
-├── prisma/
-│   └── schema.prisma
 ├── middleware.ts
 ├── package.json
 └── README.md
@@ -133,4 +125,4 @@ license-key/
 - 期限付きライセンス
 - レート制限
 - メールテンプレートのカスタマイズ
-- データベースの切り替え（PostgreSQL等）
+- Firebase Firestoreの設定

@@ -1,7 +1,7 @@
 # README
 
 このキットは「指定したメールアドレスへライセンスキーを送付し、そのキーでログインしてツールにアクセスさせる」最小構成です。
-- **スタック**: Next.js (App Router) + Prisma + SQLite(デフォ) / PostgreSQL(切替可) + Nodemailer(SMTP)
+- **スタック**: Next.js (App Router) + Firebase + Nodemailer(SMTP)
 - **機能**:
   - 管理者APIでライセンス発行 → メール送付
   - ライセンスキー + メールで有効化 → JWTをHttpOnly Cookieにセット

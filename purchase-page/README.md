@@ -1,6 +1,6 @@
 # FormAutoFiller Pro - 法人向けソフトウェア販売フロー
 
-Next.js 14 + TypeScript + Prisma + Stripe + Resend を使用した法人向けソフトウェア販売システムです。
+Next.js 14 + TypeScript + Firebase + Stripe + Resend を使用した法人向けソフトウェア販売システムです。
 
 ## 機能
 
@@ -14,8 +14,8 @@ Next.js 14 + TypeScript + Prisma + Stripe + Resend を使用した法人向け�
 ## 技術スタック
 
 - **フロントエンド**: Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
-- **バックエンド**: Next.js API Routes, Prisma ORM
-- **データベース**: SQLite (開発) / PostgreSQL (本番)
+- **バックエンド**: Next.js API Routes, Firebase
+- **データベース**: Firebase Firestore
 - **決済**: Stripe
 - **メール**: Resend
 - **フォーム**: React Hook Form + Zod
@@ -47,8 +47,10 @@ cp env.example .env.local
 `.env.local` ファイルを編集し、必要な値を設定してください：
 
 ```env
-# Database
-DATABASE_URL="file:./prisma/dev.db"
+# Firebase
+FIREBASE_PROJECT_ID="your-project-id"
+FIREBASE_PRIVATE_KEY="your-private-key"
+FIREBASE_CLIENT_EMAIL="your-client-email"
 
 # Stripe
 STRIPE_SECRET_KEY="sk_test_..."
@@ -65,20 +67,7 @@ ADMIN_TOKEN="your-secure-admin-token-here"
 LICENSE_SECRET="your-license-secret-key-here"
 ```
 
-### 4. データベースのセットアップ
-
-```bash
-# Prismaクライアントの生成
-npm run db:generate
-
-# データベースマイグレーション
-npm run db:migrate
-
-# データベーススタジオ（オプション）
-npm run db:studio
-```
-
-### 5. 開発サーバーの起動
+### 4. 開発サーバーの起動
 
 ```bash
 npm run dev
@@ -116,22 +105,22 @@ npm run dev
 ## API エンドポイント
 
 ### 注文関連
-- `POST /api/orders` - 注文作成
-- `GET /api/orders` - 注文一覧（開発用）
-- `GET /api/orders/[id]` - 注文詳細
+- `POST /api/orders` - 注文作成（Firebase用に再実装予定）
+- `GET /api/orders` - 注文一覧（開発用、Firebase用に再実装予定）
+- `GET /api/orders/[id]` - 注文詳細（Firebase用に再実装予定）
 
 ### 決済関連
-- `POST /api/checkout` - Stripe PaymentIntent作成
-- `POST /api/webhooks/stripe` - Stripe Webhook処理
+- `POST /api/checkout` - Stripe PaymentIntent作成（Firebase用に再実装予定）
+- `POST /api/webhooks/stripe` - Stripe Webhook処理（Firebase用に再実装予定）
 
 ### 請求書関連
-- `POST /api/quotes` - 見積書PDF生成
+- `POST /api/quotes` - 見積書PDF生成（Firebase用に再実装予定）
 
 ### ライセンス関連
-- `POST /api/licenses/verify` - ライセンスキー検証
+- `POST /api/licenses/verify` - ライセンスキー検証（Firebase用に再実装予定）
 
 ### 管理API
-- `POST /api/admin/orders/[id]/mark-paid` - 入金反映→ライセンス発行
+- `POST /api/admin/orders/[id]/mark-paid` - 入金反映→ライセンス発行（Firebase用に再実装予定）
 
 ## テスト
 
@@ -194,9 +183,9 @@ npx playwright show-report
 
 ### よくある問題
 
-1. **データベース接続エラー**
-   - `DATABASE_URL` が正しく設定されているか確認
-   - SQLiteのDBファイルにアクセスできるか確認
+1. **Firebase接続エラー**
+   - `FIREBASE_PROJECT_ID` が正しく設定されているか確認
+   - Firebase認証情報が正しく設定されているか確認
 
 2. **Stripe決済エラー**
    - `STRIPE_SECRET_KEY` が正しく設定されているか確認
