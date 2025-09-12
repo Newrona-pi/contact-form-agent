@@ -99,18 +99,44 @@ export default function PurchasePage() {
 
   const onSubmit = async (data: PurchaseFormData) => {
     setIsSubmitting(true);
-    
+
     try {
+      const payload = {
+        company: {
+          name: data.company_name,
+          department: data.department,
+          addressLine1: data.address_line1,
+          addressLine2: data.address_line2,
+          postalCode: data.address_zip,
+          city: data.address_city,
+          prefecture: data.address_pref,
+        },
+        contact: {
+          name: data.contact_name,
+          email: data.email,
+          phone: data.phone,
+          position: data.role,
+        },
+        billing: {
+          name: data.billing_name,
+          department: data.billing_department,
+          addressLine1: data.address_line1,
+          addressLine2: data.address_line2,
+          postalCode: data.address_zip,
+          city: data.address_city,
+          prefecture: data.address_pref,
+        },
+        plan: data.plan.toUpperCase(),
+        seats: data.seats,
+        paymentMethod: data.payment_method.toUpperCase(),
+      };
+
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...data,
-          submitTime: formStartTimeRef.current,
-          honeypot: "", // ハニーポット
-        }),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
