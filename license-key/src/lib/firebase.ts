@@ -5,7 +5,9 @@ export function getDb(): Firestore {
   if (!getApps().length) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY
+      ? Buffer.from(process.env.FIREBASE_PRIVATE_KEY, 'base64').toString('utf8')
+      : undefined;
 
     if (!projectId || !clientEmail || !privateKey) {
       throw new Error("Firebase環境変数が設定されていません");
