@@ -30,7 +30,7 @@ npm install
 ```env
 # Firebase
 FIREBASE_PROJECT_ID="your-project-id"
-FIREBASE_PRIVATE_KEY="your-private-key"
+FIREBASE_PRIVATE_KEY="base64-encoded-private-key" # Base64 encoded
 FIREBASE_CLIENT_EMAIL="your-client-email"
 
 # 認証
