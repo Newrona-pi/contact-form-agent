@@ -8,6 +8,7 @@ const nextConfig = {
       ...config.resolve.alias,
       '@': path.resolve(process.cwd(), 'src'),
     }
+
     if (isServer) {
       config.externals = config.externals || []
       // Exclude all @node-rs/argon2 variants so Next.js loads them at runtime
