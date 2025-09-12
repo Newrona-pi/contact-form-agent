@@ -68,6 +68,22 @@ async function createOrder(request: NextRequest) {
     const orderRef = await db.collection("orders").add(orderData);
     const orderId = orderRef.id;
 
+    if (process.env.AUTO_ISSUE_LICENSE === 'true') {
+      const res = await fetch(
+        `${process.env.LICENSE_SYSTEM_URL}/api/admin/issue-license`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-token': process.env.LICENSE_ADMIN_TOKEN!,
+          },
+          body: JSON.stringify({ orderId }),
+        }
+      );
+      const { licenseKey } = await res.json();
+      console.log('[TEST] issued license:', licenseKey);
+    }
+
     // 注文データを取得（IDを含む）
     const createdOrder = {
       id: orderId,
