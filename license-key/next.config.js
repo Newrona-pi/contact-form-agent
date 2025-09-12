@@ -8,6 +8,10 @@ const nextConfig = {
       ...config.resolve.alias,
       '@': path.resolve(process.cwd(), 'src'),
     }
+    config.module.rules.push({
+      test: /\.node$/,
+      use: { loader: 'node-loader' },
+    })
     return config
   },
 }
