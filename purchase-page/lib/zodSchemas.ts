@@ -43,6 +43,14 @@ export const contactSchema = z.object({
   contact_kana: z.string().optional(),
   email: z.string().email("有効なメールアドレスを入力してください"),
   phone: z.string().regex(/^[0-9+\-()\s]{8,20}$/, "有効な電話番号を入力してください（8-20文字）").optional().or(z.literal("")),
+  account_password: z
+    .string()
+    .min(8, "パスワードは8文字以上で入力してください")
+    .max(64, "パスワードは64文字以内で入力してください"),
+  account_password_confirm: z
+    .string()
+    .min(8, "パスワード（確認用）を入力してください")
+    .max(64, "パスワード（確認用）は64文字以内で入力してください"),
 });
 
 // 請求関連スキーマ
@@ -85,6 +93,9 @@ export const purchaseFormSchema = z.object({
   ...contractSchema.shape,
   // セクション5: その他
   ...otherSchema.shape,
+}).refine((data) => data.account_password === data.account_password_confirm, {
+  path: ["account_password_confirm"],
+  message: "確認用パスワードが一致していません",
 });
 
 // フリーメールドメイン検証関数

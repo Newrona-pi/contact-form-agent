@@ -6,10 +6,10 @@ Next.js 14 + TypeScript + Firebase + Stripe + Resend を使用した法人向け
 
 - **ステップ式フォーム入力**: 5つのセクションに分かれた直感的な入力フォーム
 - **決済処理**: クレジットカード決済（Stripe）と請求書払いの両方に対応
-- **ライセンス管理**: 自動ライセンスキー生成と検証
-- **メール送信**: 申込控え、ライセンス発行、請求書送付の自動メール
+- **アカウント管理**: ログインアカウントの自動作成とステータス管理
+- **メール送信**: 申込控え、ログイン案内、請求書送付の自動メール
 - **セキュリティ**: レート制限、ハニーポット、CSRF保護
-- **管理機能**: 入金反映とライセンス発行の管理API
+- **管理機能**: 入金反映とアカウント有効化の管理API
 
 ## 技術スタック
 
@@ -63,8 +63,8 @@ RESEND_API_KEY="re_..."
 # Admin
 ADMIN_TOKEN="your-secure-admin-token-here"
 
-# License
-LICENSE_SECRET="your-license-secret-key-here"
+# Tool
+TOOL_APP_URL="https://app.formautofiller-pro.com"
 ```
 
 ### 4. 開発サーバーの起動
@@ -94,13 +94,13 @@ npm run dev
 
 #### クレジットカード決済
 - Stripe PaymentIntentを使用
-- 決済完了後、自動でライセンスキーを発行
-- ライセンスキーをメールで送信
+- 決済完了後、自動でログインアカウントを有効化
+- ログインURLと利用開始ガイドをメールで送信
 
 #### 請求書払い
 - 見積書PDFを生成
 - 請求書をメールで送信
-- 入金確認後、管理APIでライセンス発行
+- 入金確認後、アカウントを有効化しログイン案内を送信
 
 ## API エンドポイント
 
@@ -116,11 +116,8 @@ npm run dev
 ### 請求書関連
 - `POST /api/quotes` - 見積書PDF生成（Firebase用に再実装予定）
 
-### ライセンス関連
-- `POST /api/licenses/verify` - ライセンスキー検証（Firebase用に再実装予定）
-
 ### 管理API
-- `POST /api/admin/orders/[id]/mark-paid` - 入金反映→ライセンス発行（Firebase用に再実装予定）
+- `POST /api/admin/orders/[id]/mark-paid` - 入金反映→アカウント有効化（Firebase用に再実装予定）
 
 ## テスト
 

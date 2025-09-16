@@ -52,13 +52,12 @@ export function logPaymentSuccess(orderId: string, email: string, amount: number
   }, "決済が完了しました");
 }
 
-export function logLicenseIssued(orderId: string, licenseKey: string, seats: number) {
+export function logAccountCreated(orderId: string, email: string) {
   logger.info({
     orderId,
-    licenseKey: licenseKey.substring(0, 8) + "***",
-    seats,
-    action: "license_issued",
-  }, "ライセンスが発行されました");
+    email: maskEmail(email),
+    action: "account_created",
+  }, "ログインアカウントが作成されました");
 }
 
 export function logError(error: Error, context?: Record<string, any>) {
