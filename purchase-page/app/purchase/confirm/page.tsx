@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatPrice, getPlanDisplayName, convertFormPlanToDbPlan } from "@/lib/price";
-import { ArrowLeft, Edit, CheckCircle } from "lucide-react";
+import { ArrowLeft, Edit, CheckCircle, MailCheck } from "lucide-react";
 
 interface OrderData {
   id: string;
@@ -164,6 +165,19 @@ export default function ConfirmPage() {
           </p>
         </div>
 
+        <Alert className="mb-6 border-green-200 bg-green-50 text-green-800">
+          <MailCheck className="h-5 w-5 text-green-600" />
+          <AlertTitle>購入が完了しました</AlertTitle>
+          <AlertDescription>
+            <p className="mb-1">お申し込み内容を受け付けました。</p>
+            <p>
+              ライセンスキーは登録されたメールアドレス（
+              <span className="font-semibold">{orderData.contact.email}</span>
+              ）にお送りいたします。
+            </p>
+          </AlertDescription>
+        </Alert>
+
         <div className="space-y-6">
           {/* 会社情報 */}
           <Card>
@@ -271,11 +285,12 @@ export default function ConfirmPage() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               フォームに戻る
             </Button>
-            
-            <Button 
-              onClick={handleProceed} 
+
+            <Button
+              onClick={handleProceed}
               disabled={isProcessing}
               className="bg-blue-600 hover:bg-blue-700"
+              data-testid="proceed-button"
             >
               {isProcessing ? (
                 "処理中..."
