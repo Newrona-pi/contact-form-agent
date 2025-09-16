@@ -5,15 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Key, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle } from 'lucide-react';
 
-interface LicenseScreenProps {
-  onLicenseValid: (key: string) => void;
+interface LoginScreenProps {
+  onAuthenticated: (email: string) => void;
 }
 
-export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
+export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
   const [email, setEmail] = useState('');
-  const [licenseKey, setLicenseKey] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,31 +23,27 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
     setError('');
 
     try {
-      // ライセンスアクティベーションAPIを呼び出し（license-keyサービス）
-      const apiBase = process.env.NEXT_PUBLIC_LICENSE_API_BASE || 'http://localhost:3000';
-      const response = await fetch(`${apiBase}/api/auth/activate`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: email.trim(),
-          licenseKey: licenseKey.trim(),
+          password: password.trim(),
         }),
       });
 
       const result = await response.json();
 
       if (response.ok && result?.success) {
-        // ローカルストレージにライセンスキーを保存
-        localStorage.setItem('contact-agent-license', licenseKey.trim());
-        onLicenseValid(licenseKey.trim());
+        onAuthenticated(email.trim());
       } else {
-        setError(result?.error || result?.message || '無効なライセンスキーです。正しいキーを入力してください。');
+        setError(result?.error || result?.message || 'メールアドレスまたはパスワードが正しくありません。');
       }
     } catch (err) {
-      console.error('License verification error:', err);
-      setError('ライセンスの検証中にエラーが発生しました。ネットワーク接続を確認してください。');
+      console.error('Login error:', err);
+      setError('ログイン処理中にエラーが発生しました。ネットワーク接続を確認してください。');
     } finally {
       setIsLoading(false);
     }
@@ -58,13 +54,13 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Key className="w-8 h-8 text-blue-600" />
+            <LogIn className="w-8 h-8 text-blue-600" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
-            ライセンス認証
+            アカウントログイン
           </CardTitle>
           <CardDescription className="text-gray-600">
-            ツールを使用するには有効なライセンスキーが必要です
+            ご登録のメールアドレスとパスワードでサインインしてください
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -82,16 +78,16 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
             </div>
             <div>
               <Input
-                type="text"
-                placeholder="ライセンスキーを入力してください"
-                value={licenseKey}
-                onChange={(e) => setLicenseKey(e.target.value)}
-                className="text-center text-lg font-mono"
+                type="password"
+                placeholder="パスワードを入力してください"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="text-center text-lg"
                 disabled={isLoading}
                 required
               />
             </div>
-            
+
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -103,17 +99,15 @@ export function LicenseScreen({ onLicenseValid }: LicenseScreenProps) {
               type="submit"
               className="w-full"
               size="lg"
-              disabled={
-                isLoading || !email.trim() || !licenseKey.trim()
-              }
+              disabled={isLoading || !email.trim() || !password.trim()}
             >
-              {isLoading ? '認証中...' : '認証する'}
+              {isLoading ? 'ログイン中...' : 'ログイン'}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              ライセンスキーをお持ちでない場合は、管理者にお問い合わせください
+              ログイン情報は購入時に設定したメールアドレスとパスワードをご利用ください。
             </p>
           </div>
         </CardContent>

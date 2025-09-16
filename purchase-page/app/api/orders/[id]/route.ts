@@ -25,10 +25,10 @@ export async function GET(
     };
 
     // 関連データの取得
-    const [paymentIntentsSnapshot, invoicesSnapshot, licensesSnapshot] = await Promise.all([
+    const [paymentIntentsSnapshot, invoicesSnapshot, accountsSnapshot] = await Promise.all([
       db.collection("paymentIntents").where("orderId", "==", orderId).get(),
       db.collection("invoices").where("orderId", "==", orderId).get(),
-      db.collection("licenses").where("orderId", "==", orderId).get(),
+      db.collection("accounts").where("orderId", "==", orderId).get(),
     ]);
 
     // 関連データを追加
@@ -42,17 +42,23 @@ export async function GET(
       ...doc.data(),
     }));
 
-    const licenses = licensesSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const accounts = accountsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email,
+        status: data.status,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
+    });
 
     return NextResponse.json({
       order: {
         ...order,
         paymentIntents,
         invoices,
-        licenses,
+        accounts,
       },
     });
 

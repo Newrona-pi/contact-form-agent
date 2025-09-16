@@ -36,7 +36,7 @@ export function InvoiceNotice({ invoiceNumber, pdfUrl, dueDate, orderId }: Invoi
       <p>銀行振込にてお支払いください。振込手数料はお客様にてご負担ください。</p>
       
       <h2 style={{ color: "#374151", marginTop: "30px" }}>入金確認後の処理</h2>
-      <p>入金確認後、ライセンスキーをメールでお送りいたします。</p>
+      <p>入金確認後、ログインアカウントを有効化し、ログイン方法をご案内いたします。</p>
       
       <p style={{ marginTop: "30px" }}>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
       

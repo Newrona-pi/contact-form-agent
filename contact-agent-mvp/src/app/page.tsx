@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,11 @@ import { DatasetsMultiselect } from '@/components/datasets-multiselect';
 import { TemplateEditor } from '@/components/template-editor';
 import { ProfileForm } from '@/components/profile-form';
 import { RunSettingsForm } from '@/components/run-settings-form';
-import { LicenseScreen } from '@/components/license-screen';
+import { LoginScreen } from '@/components/login-screen';
 import RunMonitor from '@/components/run-monitor';
 import { createRun } from '@/lib/api';
 import { useRunStore } from '@/store/run-store';
-import { useLicenseStore } from '@/store/license-store';
+import { useAuthStore } from '@/store/auth-store';
 import { PreflightRequest } from '@/lib/types';
 import { Play, LogOut } from 'lucide-react';
 
@@ -21,8 +21,8 @@ export default function Home() {
   const setCurrentRunId = useRunStore(s => s.setCurrentRunId);
   const _hasHydrated = useRunStore(s => s._hasHydrated);
   
-  // ライセンス状態
-  const { isLicenseValid, setLicenseValid, clearLicense } = useLicenseStore();
+  // 認証状態
+  const { isAuthenticated, accountEmail, setAuthenticated, logout } = useAuthStore();
   
   // フォーム状態
   const [formData, setFormData] = useState({
@@ -54,17 +54,36 @@ export default function Home() {
     mutationFn: createRun,
   });
   
+  useEffect(() => {
+    if (accountEmail && formData.profile.email === '') {
+      setFormData((prev) => ({
+        ...prev,
+        profile: {
+          ...prev.profile,
+          email: accountEmail,
+        },
+      }));
+    }
+  }, [accountEmail, formData.profile.email]);
+
   if (!_hasHydrated) {
     return <div>Loading...</div>;
   }
 
-  // ライセンスが有効でない場合はライセンス画面を表示
-  if (!isLicenseValid) {
+  // 未ログインの場合はログイン画面を表示
+  if (!isAuthenticated) {
     return (
-      <LicenseScreen 
-        onLicenseValid={(key) => {
-          setLicenseValid(key);
-        }} 
+      <LoginScreen
+        onAuthenticated={(email) => {
+          setAuthenticated(email);
+          setFormData((prev) => ({
+            ...prev,
+            profile: {
+              ...prev.profile,
+              email,
+            },
+          }));
+        }}
       />
     );
   }
@@ -95,11 +114,11 @@ export default function Home() {
           </Button>
           <Button
             variant="outline"
-            onClick={clearLicense}
+            onClick={logout}
             className="text-red-600 hover:text-red-700"
           >
             <LogOut className="h-4 w-4 mr-2" />
-            ライセンスをクリア
+            ログアウト
           </Button>
         </div>
         <RunMonitor />
@@ -119,13 +138,13 @@ export default function Home() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={clearLicense}
+              onClick={logout}
               variant="outline"
               size="sm"
               className="text-red-600 hover:text-red-700"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              ライセンスをクリア
+              ログアウト
             </Button>
             <Button
               onClick={handleRunStart}

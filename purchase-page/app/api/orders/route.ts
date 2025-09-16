@@ -3,6 +3,8 @@ import { getDb } from "@/lib/firebase";
 import { z } from "zod";
 import { withRateLimit } from "@/lib/rateLimit";
 import { FieldValue } from "firebase-admin/firestore";
+import { hashPassword } from "@/lib/password";
+import { logAccountCreated, logOrderCreation } from "@/lib/logger";
 
 const orderSchema = z.object({
   company: z.object({
@@ -32,6 +34,10 @@ const orderSchema = z.object({
   plan: z.enum(['ONE_TIME', 'MONTHLY', 'ANNUAL']),
   seats: z.number().min(1),
   paymentMethod: z.enum(['CREDIT', 'INVOICE']),
+  account: z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+  }),
 });
 
 // 料金計算
@@ -49,15 +55,31 @@ async function createOrder(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = orderSchema.parse(body);
+    const { account, ...orderInput } = validatedData;
 
     const db = getDb();
 
+    const existingAccountSnapshot = await db
+      .collection("accounts")
+      .where("email", "==", account.email)
+      .limit(1)
+      .get();
+
+    if (!existingAccountSnapshot.empty) {
+      return NextResponse.json({
+        error: "このメールアドレスは既に登録されています",
+      }, { status: 400 });
+    }
+
+    const { hash, salt } = hashPassword(account.password);
+
     // 合計金額計算
-    const totalAmount = calculateTotalAmount(validatedData.plan, validatedData.seats);
+    const totalAmount = calculateTotalAmount(orderInput.plan, orderInput.seats);
 
     // 注文データ作成
     const orderData = {
-      ...validatedData,
+      ...orderInput,
+      accountEmail: account.email,
       totalAmount,
       status: "PENDING_PAYMENT",
       createdAt: FieldValue.serverTimestamp(),
@@ -68,26 +90,20 @@ async function createOrder(request: NextRequest) {
     const orderRef = await db.collection("orders").add(orderData);
     const orderId = orderRef.id;
 
-    if (process.env.AUTO_ISSUE_LICENSE === 'true') {
-      const res = await fetch(
-        `${process.env.LICENSE_SYSTEM_URL}/api/admin/issue-license`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-token': process.env.LICENSE_ADMIN_TOKEN!,
-          },
-          body: JSON.stringify({
-            email: validatedData.contact.email,
-            plan: validatedData.plan,
-            activationLimit: validatedData.seats,
-            orderId,
-          }),
-        }
-      );
-      const { licenseKey } = await res.json();
-      console.log('[TEST] issued license:', licenseKey);
-    }
+    await db.collection("accounts").add({
+      email: account.email,
+      passwordHash: hash,
+      passwordSalt: salt,
+      orderId,
+      plan: orderInput.plan,
+      seats: orderInput.seats,
+      status: orderInput.paymentMethod === "CREDIT" ? "PENDING_PAYMENT" : "PENDING_PAYMENT",
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    logOrderCreation(orderId, account.email, totalAmount);
+    logAccountCreated(orderId, account.email);
 
     // 注文データを取得（IDを含む）
     const createdOrder = {
