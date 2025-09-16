@@ -39,6 +39,7 @@ test.describe("Purchase Flow", () => {
 
     // 確認ページ
     await expect(page).toHaveURL(/\/purchase\/confirm/);
+    await expect(page.locator("text=購入が完了しました")).toBeVisible();
     await expect(page.locator("text=注文内容の確認")).toBeVisible();
     await expect(page.locator("text=株式会社テスト")).toBeVisible();
     await expect(page.locator("text=田中太郎")).toBeVisible();
@@ -80,6 +81,7 @@ test.describe("Purchase Flow", () => {
 
     // 確認ページ
     await expect(page).toHaveURL(/\/purchase\/confirm/);
+    await expect(page.locator("text=購入が完了しました")).toBeVisible();
     await expect(page.locator("text=請求書払い")).toBeVisible();
 
     // 見積書を生成
