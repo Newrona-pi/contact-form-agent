@@ -43,6 +43,8 @@ export default function PurchasePage() {
       contact_kana: "",
       email: "",
       phone: "",
+      account_password: "",
+      account_password_confirm: "",
       billing_name: "",
       billing_department: "",
       billing_email: "",
@@ -85,7 +87,13 @@ export default function PurchasePage() {
       case 1:
         return ["company_name"];
       case 2:
-        return ["contact_name", "email", "phone"];
+        return [
+          "contact_name",
+          "email",
+          "phone",
+          "account_password",
+          "account_password_confirm",
+        ];
       case 3:
         return ["billing_name", "payment_method"];
       case 4:
@@ -129,6 +137,10 @@ export default function PurchasePage() {
         plan: data.plan.toUpperCase(),
         seats: data.seats,
         paymentMethod: data.payment_method.toUpperCase(),
+        account: {
+          email: data.email,
+          password: data.account_password,
+        },
       };
 
       const response = await fetch("/api/orders", {

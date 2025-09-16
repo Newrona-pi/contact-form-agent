@@ -7,6 +7,7 @@ interface ApplicationReceiptProps {
     plan: string;
     seats: number;
     payment_method: string;
+    email: string;
   };
   orderId: string;
 }
@@ -41,17 +42,23 @@ export function ApplicationReceipt({ orderData, orderId }: ApplicationReceiptPro
         <p><strong>支払い方法:</strong> {paymentMethodNames[orderData.payment_method as keyof typeof paymentMethodNames]}</p>
         <p><strong>注文番号:</strong> {orderId}</p>
       </div>
-      
+
+      <h2 style={{ color: "#374151", marginTop: "30px" }}>ログイン情報</h2>
+      <div style={{ backgroundColor: "#eef2ff", padding: "20px", borderRadius: "8px", margin: "20px 0", borderLeft: "4px solid #6366f1" }}>
+        <p><strong>ログインメールアドレス:</strong> {orderData.email}</p>
+        <p><strong>パスワード:</strong> 申込フォームで設定いただいた内容をご利用ください。</p>
+      </div>
+
       {orderData.payment_method === "credit" ? (
         <>
           <h2 style={{ color: "#374151", marginTop: "30px" }}>次のステップ</h2>
-          <p>クレジットカード決済が完了次第、ライセンスキーをメールでお送りいたします。</p>
+          <p>クレジットカード決済が完了次第、ログインURLとご利用開始ガイドをメールでお送りします。</p>
         </>
       ) : (
         <>
           <h2 style={{ color: "#374151", marginTop: "30px" }}>次のステップ</h2>
           <p>請求書払いをご選択いただきました。見積書・請求書を別途メールでお送りいたします。</p>
-          <p>入金確認後、ライセンスキーを発行いたします。</p>
+          <p>入金確認後、アカウントを有効化しログイン方法をご案内いたします。</p>
         </>
       )}
       

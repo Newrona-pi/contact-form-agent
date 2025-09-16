@@ -167,6 +167,40 @@ export function FormFields({ section }: FormFieldsProps) {
             <p className="text-sm text-red-600 mt-1">{errors.phone.message}</p>
           )}
         </div>
+
+        <div className="border-t pt-4">
+          <h3 className="text-lg font-medium">ログイン情報</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            お申し込み完了後、このメールアドレスとパスワードでツールにログインいただけます。
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="account_password">パスワード *</Label>
+              <Input
+                id="account_password"
+                type="password"
+                {...register("account_password")}
+                placeholder="********"
+              />
+              {errors.account_password && (
+                <p className="text-sm text-red-600 mt-1">{errors.account_password.message}</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="account_password_confirm">パスワード（確認） *</Label>
+              <Input
+                id="account_password_confirm"
+                type="password"
+                {...register("account_password_confirm")}
+                placeholder="********"
+              />
+              {errors.account_password_confirm && (
+                <p className="text-sm text-red-600 mt-1">{errors.account_password_confirm.message}</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

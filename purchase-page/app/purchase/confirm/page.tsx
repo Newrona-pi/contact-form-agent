@@ -37,6 +37,13 @@ interface OrderData {
   paymentMethod: string;
   totalAmount: number;
   createdAt: string;
+  accountEmail?: string;
+  accounts?: Array<{
+    id: string;
+    email: string;
+    status: string;
+    createdAt?: string;
+  }>;
 }
 
 export default function ConfirmPage() {
@@ -78,6 +85,16 @@ export default function ConfirmPage() {
   const handleEdit = () => {
     router.push("/purchase");
   };
+
+  const accountStatusLabel = orderData?.accounts?.[0]?.status
+    ? orderData.accounts[0].status === "ACTIVE"
+      ? "有効"
+      : orderData.accounts[0].status === "PENDING_PAYMENT"
+        ? "入金待ち"
+        : orderData.accounts[0].status === "SUSPENDED"
+          ? "利用停止"
+          : orderData.accounts[0].status
+    : undefined;
 
   const handleProceed = async () => {
     if (!orderData) return;
@@ -171,9 +188,9 @@ export default function ConfirmPage() {
           <AlertDescription>
             <p className="mb-1">お申し込み内容を受け付けました。</p>
             <p>
-              ライセンスキーは登録されたメールアドレス（
-              <span className="font-semibold">{orderData.contact.email}</span>
-              ）にお送りいたします。
+              ログインアカウントは登録されたメールアドレス（
+              <span className="font-semibold">{orderData.accountEmail ?? orderData.contact.email}</span>
+              ）で作成されます。設定いただいたパスワードでツールにサインインしてください。
             </p>
           </AlertDescription>
         </Alert>
@@ -228,6 +245,26 @@ export default function ConfirmPage() {
               {orderData.contact.kana && <p><strong>担当者名（カナ）:</strong> {orderData.contact.kana}</p>}
               <p><strong>メールアドレス:</strong> {orderData.contact.email}</p>
               {orderData.contact.phone && <p><strong>電話番号:</strong> {orderData.contact.phone}</p>}
+            </CardContent>
+          </Card>
+
+          {/* ログイン情報 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>ログイン情報</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p>
+                <strong>ログインメールアドレス:</strong> {orderData.accountEmail ?? orderData.contact.email}
+              </p>
+              <p className="text-sm text-gray-600">
+                パスワードは申込フォームで設定したものをご利用ください。セキュリティのため、画面上には表示いたしません。
+              </p>
+              {accountStatusLabel && (
+                <p className="text-sm text-gray-600">
+                  アカウントステータス: <Badge variant="outline">{accountStatusLabel}</Badge>
+                </p>
+              )}
             </CardContent>
           </Card>
 

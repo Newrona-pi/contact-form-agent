@@ -22,9 +22,10 @@ interface OrderData {
   totalAmount: number;
   paymentMethod: string;
   status: string;
-  licenses?: Array<{
-    key: string;
-    seats: number;
+  accountEmail?: string;
+  accounts?: Array<{
+    id: string;
+    email: string;
     status: string;
   }>;
   invoices?: Array<{
@@ -102,7 +103,17 @@ export default function ThanksPage() {
 
   const isCreditPayment = orderData.paymentMethod === "CREDIT" || type === "credit";
   const isPaid = orderData.status === "PAID";
-  const hasLicense = orderData.licenses && orderData.licenses.length > 0;
+  const accountEmail = orderData.accountEmail ?? orderData.contact.email;
+  const accountRecord = orderData.accounts?.[0];
+  const accountStatusText = accountRecord?.status
+    ? accountRecord.status === "ACTIVE"
+      ? "有効"
+      : accountRecord.status === "PENDING_PAYMENT"
+        ? "入金待ち"
+        : accountRecord.status === "SUSPENDED"
+          ? "利用停止"
+          : accountRecord.status
+    : undefined;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -168,34 +179,34 @@ export default function ThanksPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isPaid && hasLicense ? (
+                {isPaid ? (
                   <div className="space-y-4">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="h-5 w-5 text-green-600" />
                       <span className="font-medium text-green-600">決済完了</span>
                     </div>
-                    
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h3 className="font-semibold text-green-800 mb-2">ライセンスキーが発行されました</h3>
-                      <div className="space-y-2">
+
+                    <div className="bg-green-50 p-4 rounded-lg space-y-2">
+                      <h3 className="font-semibold text-green-800">ログイン準備が整いました</h3>
+                      <p className="text-sm text-green-700">
+                        ログインメールアドレス: <strong>{accountEmail}</strong>
+                      </p>
+                      {accountStatusText && (
                         <p className="text-sm text-green-700">
-                          <strong>ライセンスキー:</strong>
+                          アカウントステータス: {accountStatusText}
                         </p>
-                        <div className="bg-white p-3 rounded border font-mono text-sm break-all">
-                          {orderData.licenses![0].key}
-                        </div>
-                        <p className="text-sm text-green-700">
-                          利用可能席数: {orderData.licenses![0].seats}席
-                        </p>
-                      </div>
+                      )}
+                      <p className="text-sm text-green-700">
+                        申込時に設定いただいたパスワードでログインできます。
+                      </p>
                     </div>
-                    
+
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h3 className="font-semibold text-blue-800 mb-2">利用開始方法</h3>
                       <ol className="text-sm text-blue-700 space-y-1">
-                        <li>1. FormAutoFiller Proアプリケーションをダウンロード</li>
-                        <li>2. 上記のライセンスキーを入力</li>
-                        <li>3. 利用開始</li>
+                        <li>1. FormAutoFiller Proアプリケーションを開く</li>
+                        <li>2. ご登録のメールアドレスとパスワードでログイン</li>
+                        <li>3. テンプレートやデータセットを設定して利用開始</li>
                       </ol>
                     </div>
                   </div>
@@ -206,7 +217,7 @@ export default function ThanksPage() {
                       <span className="font-medium">決済処理中...</span>
                     </div>
                     <p className="text-gray-600">
-                      決済が完了次第、ライセンスキーをメールでお送りいたします。
+                      決済が完了次第、ログインURLとご利用開始のご案内をメールでお送りします。
                     </p>
                   </div>
                 )}
@@ -221,26 +232,23 @@ export default function ThanksPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isPaid && hasLicense ? (
+                {isPaid ? (
                   <div className="space-y-4">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="h-5 w-5 text-green-600" />
                       <span className="font-medium text-green-600">入金確認完了</span>
                     </div>
-                    
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h3 className="font-semibold text-green-800 mb-2">ライセンスキーが発行されました</h3>
-                      <div className="space-y-2">
+
+                    <div className="bg-green-50 p-4 rounded-lg space-y-2">
+                      <h3 className="font-semibold text-green-800">ログインアカウントが有効になりました</h3>
+                      <p className="text-sm text-green-700">
+                        ログインメールアドレス: <strong>{accountEmail}</strong>
+                      </p>
+                      {accountStatusText && (
                         <p className="text-sm text-green-700">
-                          <strong>ライセンスキー:</strong>
+                          アカウントステータス: {accountStatusText}
                         </p>
-                        <div className="bg-white p-3 rounded border font-mono text-sm break-all">
-                          {orderData.licenses![0].key}
-                        </div>
-                        <p className="text-sm text-green-700">
-                          利用可能席数: {orderData.licenses![0].seats}席
-                        </p>
-                      </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -256,9 +264,9 @@ export default function ThanksPage() {
                             <strong>請求書番号:</strong> {orderData.invoices[0].number}
                           </p>
                           {orderData.invoices[0].pdfUrl && (
-                            <Button 
+                            <Button
                               onClick={handleDownloadInvoice}
-                              variant="outline" 
+                              variant="outline"
                               size="sm"
                               className="mt-2"
                             >
@@ -269,11 +277,11 @@ export default function ThanksPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="bg-yellow-50 p-4 rounded-lg">
                       <h3 className="font-semibold text-yellow-800 mb-2">入金確認後の処理</h3>
                       <p className="text-sm text-yellow-700">
-                        入金確認後、ライセンスキーをメールでお送りいたします。
+                        入金確認後、ログインアカウントが自動的に有効化されます。
                       </p>
                     </div>
                   </div>
@@ -294,14 +302,19 @@ export default function ThanksPage() {
               <p className="text-gray-600 mb-2">
                 申込控えを <strong>{orderData.contact.email}</strong> に送信いたしました。
               </p>
-              {isCreditPayment && isPaid && (
+              {isCreditPayment ? (
+                isPaid ? (
+                  <p className="text-gray-600">
+                    ログインURLとご利用開始のご案内も同じメールアドレスに送信しました。
+                  </p>
+                ) : (
+                  <p className="text-gray-600">
+                    決済が完了次第、ログイン手順を記載したメールをお送りします。
+                  </p>
+                )
+              ) : (
                 <p className="text-gray-600">
-                  ライセンスキーも同じメールアドレスに送信いたしました。
-                </p>
-              )}
-              {!isCreditPayment && (
-                <p className="text-gray-600">
-                  見積書・請求書も同じメールアドレスに送信いたします。
+                  見積書・請求書をお送りし、入金確認後にログイン方法をご案内いたします。
                 </p>
               )}
             </CardContent>

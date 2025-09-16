@@ -67,16 +67,17 @@ interface Invoice {
 }
 ```
 
-### 4. licenses (ライセンス)
+### 4. accounts (ログインアカウント)
 ```typescript
-interface License {
+interface Account {
   id: string; // 自動生成
   orderId: string; // ordersコレクションへの参照
-  key: string; // ライセンスキー
-  status: 'ACTIVE' | 'INACTIVE' | 'REVOKED';
+  email: string;
+  passwordHash: string;
+  passwordSalt: string;
+  status: 'PENDING_PAYMENT' | 'ACTIVE' | 'SUSPENDED';
+  plan: 'ONE_TIME' | 'MONTHLY' | 'ANNUAL';
   seats: number;
-  issuedAt: Timestamp;
-  expiresAt?: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -100,11 +101,11 @@ interface WebhookEvent {
 - `orders`: `paymentMethod` + `status`
 - `paymentIntents`: `orderId` + `status`
 - `invoices`: `orderId` + `status`
-- `licenses`: `orderId` + `status`
+- `accounts`: `orderId` + `status`
 
 ### 単一フィールドインデックス
 - `orders.contact.email`
-- `licenses.key`
+- `accounts.email`
 - `invoices.number`
 
 ## セキュリティルール（例）
@@ -118,9 +119,9 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     
-    // ライセンスデータは管理者のみアクセス可能
-    match /licenses/{licenseId} {
-      allow read, write: if request.auth != null && 
+    // アカウントデータは管理者のみアクセス可能
+    match /accounts/{accountId} {
+      allow read, write: if request.auth != null &&
         request.auth.token.admin == true;
     }
   }
