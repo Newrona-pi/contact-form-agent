@@ -77,7 +77,12 @@ async function createOrder(request: NextRequest) {
             'Content-Type': 'application/json',
             'x-admin-token': process.env.LICENSE_ADMIN_TOKEN!,
           },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({
+            email: validatedData.contact.email,
+            plan: validatedData.plan,
+            activationLimit: validatedData.seats,
+            orderId,
+          }),
         }
       );
       const { licenseKey } = await res.json();
