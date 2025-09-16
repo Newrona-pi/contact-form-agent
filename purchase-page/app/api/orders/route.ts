@@ -70,7 +70,7 @@ async function createOrder(request: NextRequest) {
 
     if (process.env.AUTO_ISSUE_LICENSE === 'true') {
       const res = await fetch(
-        `${process.env.LICENSE_SYSTEM_URL}/api/admin/issueLicense`,
+        `${process.env.LICENSE_SYSTEM_URL}/api/admin/issue-license`,
         {
           method: 'POST',
           headers: {
