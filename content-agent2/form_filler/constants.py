@@ -17,8 +17,8 @@ LEARN_STOPWORDS = [
 # フィールドマッピング用の正規表現パターン（初期値: 元実装と同等）
 CANDIDATES: dict[str, list[str]] = {
     "name":    [r"(氏名|お名前|おなまえ|ご担当者|ご担当者名|担当者名|namae|(?<![a-z])person(?!al)|firstname|form_name|kanji|name01|name02|__name|corp_name1|rcp-name|your-name|fullname|contact-name|customer-name|user-name|client-name|cust_name)", r"(full\s*name|your[-_ ]?name|contact[-_ ]?name|customer[-_ ]?name|user[-_ ]?name|client[-_ ]?name|cust[-_ ]?name)"],
-    "first_name": [r"(名|お名前\(名\)|first[-_ ]?name|given[-_ ]?name|名\(めい\)|name_first|name02|your[-_]?mei|firstname|givenname|first_name|given_name|your-first-name|contact-first-name|customer-first-name|user-first-name|client-first-name|太郎|花子|例\)太郎|例\)[^）]*太郎|例\)[^）]*花子)"],
-    "last_name":  [r"(姓|氏|お名前\(姓\)|last[-_ ]?name|family[-_ ]?name|姓\(せい\)|name_last|name01|your[-_]?sei|lastname|familyname|last_name|family_name|your-last-name|contact-last-name|customer-last-name|user-last-name|client-last-name|山田|田中|例\)山田|例\)[^）]*山田|例\)[^）]*田中)"],
+    "first_name": [r"(名|お名前\(名\)|first[-_ ]?name|given[-_ ]?name|名\(めい\)|name_first|name02|your[-_]?mei|firstname|givenname|first_name|given_name|your-first-name|contact-first-name|customer-first-name|user-first-name|client-first-name|太郎|花子|例\)太郎|例\)[^）]*太郎|例\)[^）]*花子)", r"name[_-]?mei"],
+    "last_name":  [r"(姓|氏|お名前\(姓\)|last[-_ ]?name|family[-_ ]?name|姓\(せい\)|name_last|name01|your[-_]?sei|lastname|familyname|last_name|family_name|your-last-name|contact-last-name|customer-last-name|user-last-name|client-last-name|山田|田中|例\)山田|例\)[^）]*山田|例\)[^）]*田中)", r"name[_-]?sei"],
     "nameSei": [r"namesei", r"name_sei", r"姓"],
     "nameMei": [r"namemei", r"name_mei", r"名"],
     "kanaSei": [
@@ -32,7 +32,7 @@ CANDIDATES: dict[str, list[str]] = {
         r"mei[_-]?kana"            # 追加: mei_kana / mei-kana
     ],
     "furigana": [r"furigana", r"kana", r"yomigana", r"ふりがな", r"フリガナ", r"かな", r"カナ", r"よみがな", r"ヨミガナ", r"氏名カナ", r"氏名ふりがな", r"名前カナ", r"名前ふりがな", r"furi", r"kana_last", r"kana_first", r"form_name_ruby", r"corp_name2"],
-    "email":   [r"e[-_ ]?mail", r"email", r"mail address", r"メール", r"form_email", r"mail", r"corp_email", r"sendmailaddress|your-email|contact-email|customer-email|user-email|client-email|email-address|mail-address|your-mail|contact-mail|customer-mail|user-mail|client-mail"],
+    "email":   [r"e[-_ ]?mail", r"email", r"mail address", r"メール", r"form_email", r"mail", r"corp_email", r"sendmailaddress|your-email|contact-email|customer-email|user-email|client-email|email-address|mail-address|your-mail|contact-mail|customer-mail|user-mail|client-mail", r"email[_-]?address"],
     "email_confirm": [r"e[-_ ]?mail[-_ ]?confirm", r"email[-_ ]?confirm", r"confirm[-_ ]?email", r"e[-_ ]?mail[-_ ]?verification", r"email[-_ ]?verification", r"verify[-_ ]?email", r"e[-_ ]?mail[-_ ]?check", r"email[-_ ]?check", r"check[-_ ]?email", r"e[-_ ]?mail[-_ ]?retype", r"email[-_ ]?retype", r"retype[-_ ]?email", r"e[-_ ]?mail[-_ ]?again", r"email[-_ ]?again", r"again[-_ ]?email", r"e[-_ ]?mail[-_ ]?repeat", r"email[-_ ]?repeat", r"repeat[-_ ]?email", r"e[-_ ]?mail[-_ ]?2", r"email[-_ ]?2", r"e[-_ ]?mail[-_ ]?second", r"email[-_ ]?second", r"second[-_ ]?email", r"e[-_ ]?mail[-_ ]?duplicate", r"email[-_ ]?duplicate", r"duplicate[-_ ]?email", r"e[-_ ]?mail[-_ ]?copy", r"email[-_ ]?copy", r"copy[-_ ]?email", r"form_email_confirm", r"メールアドレス（確認）", r"mail_to2", r"re_email", r"mail_confirm", r"sendmailaddresscfm|your-email-confirm|contact-email-confirm|customer-email-confirm|user-email-confirm|client-email-confirm|email-confirm|mail-confirm|your-mail-confirm|contact-mail-confirm|customer-mail-confirm|user-mail-confirm|client-mail-confirm|form_check_mail"],
     "phone":   [r"phone", r"tel", r"telephone", r"電話", r"電話番号", r"電話番号", r"お電話番号", r"tel", r"form_tel", r"corp_phone|your-phone|contact-phone|customer-phone|user-phone|client-phone|phone-number|tel-number|telephone-number|your-tel|contact-tel|customer-tel|user-tel|client-tel|your-telephone|contact-telephone|customer-telephone|user-telephone|client-telephone"],
     "company": [r"company", r"corporate", r"organization", r"会社", r"企業名", r"kaisya", r"会社名", r"form_company_name", r"御社名", r"貴社名", r"corp_name3", r"corp-name|your-company|contact-company|customer-company|user-company|client-company|company-name|organization-name|corporate-name|your-organization|contact-organization|customer-organization|user-organization|client-organization|your-corporate|contact-corporate|customer-corporate|user-corporate|client-corporate"],
@@ -105,7 +105,7 @@ FILLABLE_KEYS: set[str] = {
     "input_01", "input_02", "input_03", "input_04", "input_05",
     # 新しいフィールド名パターン
     "your-name", "contact-name", "customer-name", "user-name", "client-name", "fullname",
-    "your-email", "contact-email", "customer-email", "user-email", "client-email", "email-address", "mail-address", "form_check_mail",
+    "your-email", "contact-email", "customer-email", "user-email", "client-email", "email-address", "mail-address", "form_check_mail", "email_address",
     "your-phone", "contact-phone", "customer-phone", "user-phone", "client-phone", "phone-number", "tel-number",
     "your-company", "contact-company", "customer-company", "user-company", "client-company", "company-name", "organization-name", "company_name",
     "your-department", "contact-department", "customer-department", "user-department", "client-department", "department-name", "section-name",
@@ -135,7 +135,8 @@ STRONG_TOKENS: dict[str, list[str]] = {
     "email": [
         r"(?<![a-z])e[-_]?mail(?![a-z])",
         r"(?<![a-z])email(?![a-z])",
-        r"メール"
+        r"メール",
+        r"email[_-]?address"
     ],
     "email_confirm": [
         r"confirm", r"conf", r"retype", r"again",
@@ -152,11 +153,13 @@ STRONG_TOKENS: dict[str, list[str]] = {
     ],
     "first_name": [
         r"名", r"太郎", r"花子",
-        r"例[)：:\s]*太郎", r"例[)：:\s]*花子"
+        r"例[)：:\s]*太郎", r"例[)：:\s]*花子",
+        r"name[_-]?mei"
     ],
     "last_name": [
         r"姓", r"氏", r"山田", r"田中",
-        r"例[)：:\s]*山田", r"例[)：:\s]*田中"
+        r"例[)：:\s]*山田", r"例[)：:\s]*田中",
+        r"name[_-]?sei"
     ],
     "company": [
         r"(?<![a-z])company(?![a-z])",
