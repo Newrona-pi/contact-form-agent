@@ -1076,7 +1076,12 @@ class FormFiller(FormFillerCore):
         except Exception as e:
             logger.debug(f"learning signal記録エラー: {e}")
 
-    async def find_best_field_match(self, page: Page, field_name: str) -> Optional[Tuple[Any, str]]:
+    async def find_best_field_match(
+        self,
+        page: Page,
+        field_name: str,
+        exclude_selectors: Optional[set[str]] = None,
+    ) -> Optional[Tuple[Any, str]]:
         """
         既存のスコア法（フォールバック用に温存）。
         """
@@ -1239,10 +1244,19 @@ class FormFiller(FormFillerCore):
                     logger.debug(f"  #{i+1}: score={score} selector={sel} detail={score_detail}")
 
             min_score = SPECIAL_MIN_SCORE.get(field_name, 5)
-            if candidates and candidates[0][1] >= min_score:
-                (best_frame, best_selector) = candidates[0][0]
-                best_score = candidates[0][1]
-                best_detail = candidates[0][2]
+            exclude = exclude_selectors or set()
+            for (best_frame, best_selector), best_score, best_detail in candidates:
+                if best_selector in exclude:
+                    if self.debug:
+                        try:
+                            logger.debug(
+                                f"[フィールド探索] '{field_name}' 除外セレクタをスキップ: {best_selector}"
+                            )
+                        except Exception:
+                            pass
+                    continue
+                if best_score < min_score:
+                    continue
 
                 if self.debug:
                     try:
@@ -1252,7 +1266,9 @@ class FormFiller(FormFillerCore):
                         pass
                 if self.debug:
                     try:
-                        logger.info(f"[選定] {field_name}: {best_selector} score={best_score} detail={best_detail}")
+                        logger.info(
+                            f"[選定] {field_name}: {best_selector} score={best_score} detail={best_detail}"
+                        )
                     except Exception:
                         pass
 
@@ -1312,12 +1328,18 @@ class FormFiller(FormFillerCore):
         if not split_like:
             needed_keys = [k for k in needed_keys if k not in ("first_name", "last_name")]
         used_selectors: set[str] = set()
+        reserved_selectors: set[str] = set()
+
+        def _mark_reserved(selector: Optional[str]):
+            if selector:
+                reserved_selectors.add(selector)
 
         def reserve(f: Dict[str, Any], key: str):
             sel = f.get("selector")
             if not sel or sel in used_selectors:
                 return False
             used_selectors.add(sel)
+            _mark_reserved(sel)
             element_map[key] = (page, sel)
             return True
 
@@ -1384,7 +1406,9 @@ class FormFiller(FormFillerCore):
             try:
                 corp_sub_el = soup.find("input", attrs={"name": "corp_sub"})
                 if corp_sub_el:
-                    element_map["subject"] = (None, selector_for(corp_sub_el))
+                    sel = selector_for(corp_sub_el)
+                    element_map["subject"] = (None, sel)
+                    _mark_reserved(sel)
                     logger.info("subjectフィールド（corp_sub）を直接マッピングしました")
             except Exception as e:
                 logger.debug(f"subjectフィールド（corp_sub）直接マッピングエラー: {e}")
@@ -1392,10 +1416,17 @@ class FormFiller(FormFillerCore):
         for key in [k for k in needed_keys if k in hinted_keys]:
             allow_kana_without_data = ("furigana" in data and key in ("kanaSei", "kanaMei"))
             if (key in data or allow_kana_without_data) and key not in element_map:
-                fr_sel = await self.find_best_field_match(page, key)
+                fr_sel = await self.find_best_field_match(
+                    page, key, exclude_selectors=reserved_selectors
+                )
                 if fr_sel:
-                    element_map[key] = fr_sel
-                else:
+                    _, sel = fr_sel
+                    if sel in reserved_selectors:
+                        fr_sel = None
+                    else:
+                        element_map[key] = fr_sel
+                        _mark_reserved(sel)
+                if not fr_sel:
                     try:
                         await self._record_learning_signal(page, soup, key)
                     except Exception:
@@ -1403,9 +1434,14 @@ class FormFiller(FormFillerCore):
 
         # 会社名だけは軽量救済
         if need_company and "company" not in element_map:
-            fr_sel = await self.find_best_field_match(page, "company")
+            fr_sel = await self.find_best_field_match(
+                page, "company", exclude_selectors=reserved_selectors
+            )
             if fr_sel:
-                element_map["company"] = fr_sel
+                _, sel = fr_sel
+                if sel not in reserved_selectors:
+                    element_map["company"] = fr_sel
+                    _mark_reserved(sel)
         if need_company and "company" not in element_map:
             try:
                 el = await page.query_selector('input[name="company_name"], input[name*="company" i]')
