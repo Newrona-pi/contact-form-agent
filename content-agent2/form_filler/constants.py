@@ -61,8 +61,7 @@ CANDIDATES: dict[str, list[str]] = {
     # 住所関連フィールドを追加
     "address": [
         r"住所", r"ご住所", r"お住所", r"住まい", r"ご住まい", r"お住まい",
-        r"郵便番号", r"〒", r"postal", r"zip", r"postcode",
-        r"都道府県", r"県", r"府", r"都", r"道", r"prefecture", r"state",
+        r"〒", r"postal", r"zip", r"postcode",
         r"市区町村", r"市", r"区", r"町", r"村", r"city", r"town", r"village",
         r"丁目", r"番地", r"建物", r"部屋", r"building", r"room",
         r"street", r"address", r"location", r"addr",
@@ -79,7 +78,7 @@ CANDIDATES: dict[str, list[str]] = {
         r"input_01", r"input_02", r"input_03", r"input_04", r"input_05"
     ],
     "prefecture": [
-        r"都道府県", r"県", r"府", r"都", r"道", r"prefecture", r"state",
+        r"都道府県", r"県", r"府", r"都", r"道", r"prefecture", r"state", r"pref"
         r"your[-_ ]?prefecture", r"contact[-_ ]?prefecture", r"customer[-_ ]?prefecture"
     ],
     "city": [
