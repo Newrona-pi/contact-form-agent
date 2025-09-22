@@ -2925,7 +2925,7 @@ class FormFiller(FormFillerCore):
             row_data = {
                 key: value
                 for key, value in task.data.items()
-                if not (isinstance(value, str) and value.strip() == "")
+                if value is not None and (not isinstance(value, str) or value.strip() != "")
             }
             task.data = {**default_data, **row_data}
             await queue.put(task)
