@@ -6,6 +6,8 @@ name: "田中 太郎"
 last_name: "田中"
 first_name: "太郎"
 furigana: "タナカ タロウ"
+kanaSei: "タナカ"    
+kanaMei: "タロウ" 
 email: "tanaka@example.com"
 email_confirm: ""  # 空でOK（自動で email の値が入る）
 phone: "090-1234-5678"

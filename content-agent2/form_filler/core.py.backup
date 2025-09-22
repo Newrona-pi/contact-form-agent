@@ -14,7 +14,6 @@ import aiofiles
 import aiolimiter
 import yaml
 from playwright.async_api import async_playwright, Page
-from .auto_select import auto_select_all
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from bs4 import BeautifulSoup, Tag
 
@@ -882,10 +881,10 @@ class FormFiller(FormFillerCore):
                 # 明示的な語彙（日本語/英語）
                 if re.search(r"(姓|名|せい|めい|ふりがな|カナ|かな|姓.*名|名.*姓|family(-|\s*)name|given(-|\s*)name|first(-|\s*)name|last(-|\s*)name)", tb):
                     return True
-                # 典型的な属性名（分割氏名・フリガナフィールドを含む）
-                if re.search(r"(name0?2|name_?first|name_?last|fname|lname|first|last|given|family|name_?sei|name_?mei|name_?sei_?kana|name_?mei_?kana|kana_?sei|kana_?mei)", name_attr):
+                # 典型的な属性名
+                if re.search(r"(name0?2|name_?first|name_?last|fname|lname|first|last|given|family)", name_attr):
                     return True
-                if re.search(r"(name0?2|fname|lname|first|last|given|family|name_?sei|name_?mei|name_?sei_?kana|name_?mei_?kana|kana_?sei|kana_?mei)", id_attr):
+                if re.search(r"(name0?2|fname|lname|first|last|given|family)", id_attr):
                     return True
             return False
         except Exception:
@@ -907,10 +906,10 @@ class FormFiller(FormFillerCore):
                 name_attr = (f.get("name") or "").lower()
                 id_attr = (f.get("id") or "").lower()
                 
-                # 氏名関連の判定（分割フリガナフィールドを含む）
+                # 氏名関連の判定
                 if (re.search(r"(氏名|お名前|name|姓|名|せい|めい|ふりがな|カナ|かな)", tb) or
-                    re.search(r"(name|sei|mei|kana|furigana|name_?sei|name_?mei|name_?sei_?kana|name_?mei_?kana|kana_?sei|kana_?mei)", name_attr) or
-                    re.search(r"(name|sei|mei|kana|furigana|name_?sei|name_?mei|name_?sei_?kana|name_?mei_?kana|kana_?sei|kana_?mei)", id_attr)):
+                    re.search(r"(name|sei|mei|kana|furigana)", name_attr) or
+                    re.search(r"(name|sei|mei|kana|furigana)", id_attr)):
                     name_fields.append(f)
             
             # 氏名欄の数をカウント
@@ -918,8 +917,8 @@ class FormFiller(FormFillerCore):
             
             if name_count == 2:
                 return "single"  # 氏名 + フリガナ
-            elif name_count >= 3:
-                return "split"   # 姓 + 名 + フリガナ（分割）または 姓 + 名 + 姓フリガナ + 名フリガナ
+            elif name_count >= 4:
+                return "split"   # 姓 + 名 + 姓フリガナ + 名フリガナ
             else:
                 return "unknown"
         except Exception:
@@ -1353,104 +1352,18 @@ class FormFiller(FormFillerCore):
             return out
         bulk_fields = _without_personal(_visible_only(bulk_fields))
 
-        # --- 先行プリパス（即決ルール）: email / phone / 氏名2or4件 ---
-        try:
-            # email: name 属性に 'mail' を含む最初の input を即決割当
-            if "email" in data and "email" not in element_map:
-                for _f in bulk_fields:
-                    _nm = (_f.get("name") or "").lower()
-                    if _nm and ("mail" in _nm):
-                        sel = _f.get("selector")
-                        if sel:
-                            element_map["email"] = (page, sel)
-                            break
-        except Exception:
-            pass
-
-        try:
-            # phone: name 属性に 'tel' または 'phone' を含む最初の input を即決割当
-            if "phone" in data and "phone" not in element_map:
-                _phones = [pf for pf in bulk_fields if isinstance(pf.get("name"), str) and (("tel" in (pf.get("name") or "").lower()) or ("phone" in (pf.get("name") or "").lower()))]
-                if _phones:
-                    sel = _phones[0].get("selector")
-                    if sel:
-                        element_map["phone"] = (page, sel)
-        except Exception:
-            pass
-
-        try:
-            # 氏名カウント: name を含み、かつ company を含まない input の個数で分岐
-            _name_inputs = []
-            for _f in bulk_fields:
-                if (_f.get("tag") or "").lower() != "input":
-                    continue
-                _t = (_f.get("type") or "").lower()
-                if _t in ("hidden", "submit", "button", "checkbox", "radio"):
-                    continue
-                _nm = (_f.get("name") or "").lower()
-                if not _nm:
-                    continue
-                if "company" in _nm or "department" in _nm:
-                    continue
-                if "name" in _nm:
-                    _name_inputs.append(_f)
-
-            if len(_name_inputs) == 2:
-                if "name" in data and "name" not in element_map and _name_inputs[0].get("selector"):
-                    element_map["name"] = (page, _name_inputs[0]["selector"])
-                if "furigana" in data and "furigana" not in element_map and _name_inputs[1].get("selector"):
-                    element_map["furigana"] = (page, _name_inputs[1]["selector"])
-            elif len(_name_inputs) == 4:
-                _order_keys = ["last_name", "first_name", "kanaSei", "kanaMei"]
-                for _f, _k in zip(_name_inputs, _order_keys):
-                    if (_k in data) and (_k not in element_map) and _f.get("selector"):
-                        element_map[_k] = (page, _f["selector"])
-                # 分割確定時は name を使わない
-                if "name" in element_map:
-                    element_map.pop("name", None)
-        except Exception:
-            pass
-        
-        # デバッグ: 検出されたフィールド名をログ出力
-        field_names = [f.get("name", "") for f in bulk_fields if f.get("name")]
-        logger.info(f"検出されたフィールド名: {field_names}")
-
         # 2) 即決カスケード
         split_like = self._detect_split_name_context(bulk_fields)
         name_structure = self._detect_name_field_structure(bulk_fields)
-        logger.info(f"分割氏名欄検出結果: split_like={split_like}, name_structure={name_structure}")
         needed_keys = [k for k in FILLABLE_KEYS if k in data]
         if "furigana" in data:
             for k in ("kanaSei", "kanaMei"):
                 if k not in needed_keys:
                     needed_keys.append(k)
-        
-        # 分割フリガナフィールドが存在する場合は分割氏名として扱う
-        split_kana_fields = []
-        for f in bulk_fields:
-            field_name = f.get("name", "").lower()
-            # より具体的なパターンで分割フリガナフィールドを検出
-            if re.search(r"name_?sei_?kana|name_?mei_?kana|kana_?sei|kana_?mei|name_mei_kana|name_sei_kana", field_name):
-                split_kana_fields.append(field_name)
-        
-        if split_kana_fields:
-            split_like = True
-            logger.info(f"分割フリガナフィールドを検出: {split_kana_fields}, split_like={split_like}")
-            
         if not split_like:
             needed_keys = [k for k in needed_keys if k not in ("first_name", "last_name")]
         used_selectors: set[str] = set()
         reserved_selectors: set[str] = set()
-        # プリパスで割当済みのセレクタを使用済みに登録
-        try:
-            for _k, _v in list(element_map.items()):
-                if isinstance(_v, tuple) and len(_v) == 2:
-                    _, _sel = _v
-                    if _sel:
-                        used_selectors.add(_sel)
-                        reserved_selectors.add(_sel)
-        except Exception:
-            pass
 
         def _mark_reserved(selector: Optional[str]):
             if selector:
@@ -1620,12 +1533,6 @@ class FormFiller(FormFillerCore):
             for k in ("first_name", "last_name"):
                 if k in element_map:
                     del element_map[k]
-        
-        # 分割氏名欄が検出された場合は name フィールドを除外
-        if split_like and "name" in element_map:
-            logger.info("分割氏名欄が検出されたため、nameフィールドを除外します")
-            del element_map["name"]
-            
         if "name" in element_map:
             _, name_sel = element_map["name"]
             for k in ("first_name", "last_name", "nameSei", "nameMei", "furigana"):
@@ -1763,13 +1670,6 @@ class FormFiller(FormFillerCore):
     async def fill_form(self, page: Page, data: Dict[str, Any]) -> tuple[bool, Any, List[str]]:
         """フォーム入力（CSSセレクタ使用）"""
         try:
-            # Auto select common selects (prefecture/inquiry/position) before mapping
-            try:
-                _auto_logs = await auto_select_all(page, data)
-                if getattr(self, "debug", False) and _auto_logs:
-                    logger.debug("[auto-select] " + "; ".join([f"{x['type']} -> {x['chosen_label']}" for x in _auto_logs]))
-            except Exception:
-                pass
             element_map = await self.find_all_field_matches(page, data)
             for k, v in list(element_map.items()):
                 if isinstance(v, str):

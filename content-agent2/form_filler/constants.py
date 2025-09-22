@@ -16,7 +16,7 @@ LEARN_STOPWORDS = [
 
 # フィールドマッピング用の正規表現パターン（初期値: 元実装と同等）
 CANDIDATES: dict[str, list[str]] = {
-    "name":    [r"(氏名|お名前|おなまえ|ご担当者|ご担当者名|担当者名|namae|(?<![a-z])person(?!al)|firstname|form_name|kanji|name01|name02|__name|corp_name1|rcp-name|your-name|fullname|contact-name|customer-name|user-name|client-name|cust_name)", r"(full\s*name|your[-_ ]?name|contact[-_ ]?name|customer[-_ ]?name|user[-_ ]?name|client[-_ ]?name|cust[-_ ]?name)"],
+    "name":    [r"(氏名|お名前|おなまえ|ご担当者|ご担当者名|担当者名|namae|(?<![a-z])person(?!al)|form_name|kanji|__name|corp_name1|rcp-name|your-name|fullname|contact-name|customer-name|user-name|client-name|cust_name)", r"(full\s*name|your[-_ ]?name|contact[-_ ]?name|customer[-_ ]?name|user[-_ ]?name|client[-_ ]?name|cust[-_ ]?name)"],
     "first_name": [r"(名|お名前\(名\)|first[-_ ]?name|given[-_ ]?name|名\(めい\)|name_first|name02|your[-_]?mei|firstname|givenname|first_name|given_name|your-first-name|contact-first-name|customer-first-name|user-first-name|client-first-name|太郎|花子|例\)太郎|例\)[^）]*太郎|例\)[^）]*花子)", r"name[_-]?mei"],
     "last_name":  [r"(姓|氏|お名前\(姓\)|last[-_ ]?name|family[-_ ]?name|姓\(せい\)|name_last|name01|your[-_]?sei|lastname|familyname|last_name|family_name|your-last-name|contact-last-name|customer-last-name|user-last-name|client-last-name|山田|田中|例\)山田|例\)[^）]*山田|例\)[^）]*田中)", r"name[_-]?sei"],
     "nameSei": [r"namesei", r"name_sei", r"姓"],
