@@ -1,0 +1,91 @@
+diff --git a/content-agent2/form_filler/auto_select.py b/content-agent2/form_filler/auto_select.py
+index 1111111..2222222 100644
+--- a/content-agent2/form_filler/auto_select.py
++++ b/content-agent2/form_filler/auto_select.py
+@@ -157,33 +157,52 @@ def _get_pref_from_data(data: Dict[str, Any]) -> Optional[str]:
+     return None
+ 
+ 
+-def _best_pref_match(options: List[Tuple[str, str, bool]], pref: str) -> Optional[str]:
+-    cand = _PREF_SUFFIX.sub("", _norm(pref))
+-    best_label = None
+-    for text, value, disabled in options:
+-        if disabled:
+-            continue
+-        # テキストをより厳密に正規化（タブ、改行、複数スペースを除去）
+-        t = re.sub(r'\s+', '', text.strip())
+-        if _is_placeholder(text, value):
+-            continue
+-        # 正規化されたテキストと比較
+-        norm_pref = re.sub(r'\s+', '', _norm(pref))
+-        norm_cand = re.sub(r'\s+', '', cand)
+-        norm_t = re.sub(r'\s+', '', _norm(text))
+-        norm_t_cand = re.sub(r'\s+', '', _PREF_SUFFIX.sub("", t))
+-        
+-        if norm_t == norm_pref or norm_t == norm_cand or norm_t_cand == norm_cand:
+-            best_label = text.strip()
+-            break
+-    if best_label:
+-        return best_label
+-    for text, value, disabled in options:
+-        if disabled or _is_placeholder(text, value):
+-            continue
+-        t = _norm(text)
+-        if cand and cand in _PREF_SUFFIX.sub("", t):
+-            return text.strip()
+-    return None
++def _best_pref_match(options: List[Tuple[str, str, bool]], pref: str) -> Optional[str]:
++    \"\"\"Prefecture picker: no fuzzy fallback; canonical exact/contains only.\"\"\"
++    def _canon_pref(s: str) -> str:
++        t = _norm(s)
++        t = re.sub(r\"\\s+\", \"\", t)
++        if not t:
++            return \"\"
++        if \"北海道\" in t:
++            return \"北海道\"  # special-case
++        return _PREF_SUFFIX.sub(\"\", t)  # strip one trailing suffix
++
++    target = _canon_pref(pref)
++    if not target:
++        return None
++
++    # 1) exact canonical match (label/value)
++    for text, value, disabled in options:
++        if disabled or _is_placeholder(text, value):
++            continue
++        lab = (text or \"\").strip()
++        val = (value or \"\").strip()
++        if _canon_pref(lab) == target or _canon_pref(val) == target:
++            return lab
++
++    # 2) safe contains on canonical
++    for text, value, disabled in options:
++        if disabled or _is_placeholder(text, value):
++            continue
++        lab = (text or \"\").strip()
++        val = (value or \"\").strip()
++        if target in _canon_pref(lab) or target in _canon_pref(val):
++            return lab
++
++    return None
+diff --git a/content-agent2/form_filler/core.py b/content-agent2/form_filler/core.py
+index 3333333..4444444 100644
+--- a/content-agent2/form_filler/core.py
++++ b/content-agent2/form_filler/core.py
+@@ -72451,6 +72451,16 @@ async def fill_form(self, page: Page, data: Dict[str, Any]) -> tuple[bool, Any, List[str]]:
+             except Exception:
+                 pass
+             element_map = await self.find_all_field_matches(page, data)
++
++            # === Re-assert auto-select after generic field filling ===
++            # Some sites or subsequent routines may override select values.
++            # Run auto_select_all again to ensure prefecture/inquiry/position stay as intended.
++            try:
++                _auto_logs2 = await auto_select_all(page, data)
++                if getattr(self, "debug", False) and _auto_logs2:
++                    logger.debug("[auto-select:reassert] " + "; ".join([f\"{x['type']} -> {x['chosen_label']}\" for x in _auto_logs2]))
++            except Exception:
++                pass
+ 
+             for k, v in list(element_map.items()):
+                 if isinstance(v, str):

@@ -1771,6 +1771,16 @@ class FormFiller(FormFillerCore):
             except Exception:
                 pass
             element_map = await self.find_all_field_matches(page, data)
+
+            # === Re-assert auto-select after generic field filling ===
+            # Some sites or subsequent routines may override select values.
+            # Run auto_select_all again to ensure prefecture/inquiry/position stay as intended.
+            try:
+                _auto_logs2 = await auto_select_all(page, data)
+                if getattr(self, "debug", False) and _auto_logs2:
+                    logger.debug("[auto-select:reassert] " + "; ".join([f"{x['type']} -> {x['chosen_label']}" for x in _auto_logs2]))
+            except Exception:
+                pass
             for k, v in list(element_map.items()):
                 if isinstance(v, str):
                     element_map[k] = (None, v)
@@ -2912,7 +2922,12 @@ class FormFiller(FormFillerCore):
 
         queue: asyncio.Queue[FormTask] = asyncio.Queue()
         for task in tasks:
-            task.data = {**default_data, **task.data}
+            row_data = {
+                key: value
+                for key, value in task.data.items()
+                if not (isinstance(value, str) and value.strip() == "")
+            }
+            task.data = {**default_data, **row_data}
             await queue.put(task)
 
         workers = []

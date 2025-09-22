@@ -85,32 +85,38 @@ def _get_pref_from_data(data: Dict[str, Any]) -> Optional[str]:
 
 
 def _best_pref_match(options: List[Tuple[str, str, bool]], pref: str) -> Optional[str]:
-    cand = _PREF_SUFFIX.sub("", _norm(pref))
-    best_label = None
-    for text, value, disabled in options:
-        if disabled:
-            continue
-        # テキストをより厳密に正規化（タブ、改行、複数スペースを除去）
-        t = re.sub(r'\s+', '', text.strip())
-        if _is_placeholder(text, value):
-            continue
-        # 正規化されたテキストと比較
-        norm_pref = re.sub(r'\s+', '', _norm(pref))
-        norm_cand = re.sub(r'\s+', '', cand)
-        norm_t = re.sub(r'\s+', '', _norm(text))
-        norm_t_cand = re.sub(r'\s+', '', _PREF_SUFFIX.sub("", t))
-        
-        if norm_t == norm_pref or norm_t == norm_cand or norm_t_cand == norm_cand:
-            best_label = text.strip()
-            break
-    if best_label:
-        return best_label
+    """Prefecture picker: no fuzzy fallback; canonical exact/contains only."""
+    def _canon_pref(s: str) -> str:
+        t = _norm(s)
+        t = re.sub(r"\s+", "", t)
+        if not t:
+            return ""
+        if "北海道" in t:
+            return "北海道"  # special-case
+        return _PREF_SUFFIX.sub("", t)  # strip one trailing suffix
+
+    target = _canon_pref(pref)
+    if not target:
+        return None
+
+    # 1) exact canonical match (label/value)
     for text, value, disabled in options:
         if disabled or _is_placeholder(text, value):
             continue
-        t = _norm(text)
-        if cand and cand in _PREF_SUFFIX.sub("", t):
-            return text.strip()
+        lab = (text or "").strip()
+        val = (value or "").strip()
+        if _canon_pref(lab) == target or _canon_pref(val) == target:
+            return lab
+
+    # 2) safe contains on canonical
+    for text, value, disabled in options:
+        if disabled or _is_placeholder(text, value):
+            continue
+        lab = (text or "").strip()
+        val = (value or "").strip()
+        if target in _canon_pref(lab) or target in _canon_pref(val):
+            return lab
+
     return None
 
 
@@ -275,8 +281,18 @@ async def auto_select_all(page: Page, data: Dict[str, Any]) -> List[Dict[str, An
 
         if chosen_label:
             try:
+                # Try label first
                 await page.select_option(selector, label=chosen_label)
             except Exception:
+                # Fallback: resolve value by label and select by value
+                try:
+                    value = await page.evaluate("""(sel, lbl)=>{
+                        const el=document.querySelector(sel); if(!el) return null;
+                        const opt=[...el.options].find(o=>(o.textContent||'').trim()===lbl); return opt? (opt.value||null): null; }""", selector, chosen_label)
+                    if value:
+                        await page.select_option(selector, value=value)
+                except Exception:
+                    pass
                 await page.evaluate(
                     """(sel, label) => {
                         const el = document.querySelector(sel); if(!el) return;

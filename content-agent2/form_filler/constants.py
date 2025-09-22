@@ -65,7 +65,7 @@ CANDIDATES: dict[str, list[str]] = {
         r"都道府県", r"県", r"府", r"都", r"道", r"prefecture", r"state",
         r"市区町村", r"市", r"区", r"町", r"村", r"city", r"town", r"village",
         r"丁目", r"番地", r"建物", r"部屋", r"building", r"room",
-        r"street", r"address", r"location",
+        r"street", r"address", r"location", r"addr",
         r"your-address", r"contact-address", r"customer-address", r"user-address", r"client-address",
         r"billing-address", r"shipping-address", r"delivery-address"
     ],
